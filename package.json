@@ -7,13 +7,13 @@
   "files": [
     "dist",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "src/types.ts"
   ],
   "scripts": {
     "build": "tsc",
     "test": "jest",
     "lint": "eslint . --ext .ts",
-    "prepare": "npm run build",
     "prepublishOnly": "npm test && npm run lint",
     "preversion": "npm run lint",
     "version": "git add -A src",
@@ -41,5 +41,10 @@
   },
   "peerDependencies": {
     "typescript": ">=4.0.0"
+  },
+  "dependencies": {
+    "openai": "^4.83.0",
+    "@anthropic-ai/sdk": "^0.36.3",
+    "zod": "^3.22.4"
   }
 }
