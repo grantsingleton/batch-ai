@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import { OpenAI } from 'openai';
 import { z } from 'zod';
 import fs from 'fs';
 import path from 'path';
