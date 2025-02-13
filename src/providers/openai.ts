@@ -11,7 +11,6 @@ import {
   LanguageModel,
   LanguageModelConfig,
   BatchStatus,
-  BatchMetadata,
 } from '../types';
 
 export class OpenAILanguageModel extends LanguageModel {
@@ -106,7 +105,6 @@ export class OpenAILanguageModel extends LanguageModel {
         expiresAt: batch.expires_at
           ? new Date(batch.expires_at * 1000)
           : undefined,
-        metadata: batch.metadata as BatchMetadata,
       };
     } catch (error) {
       throw new BatchError(
@@ -151,7 +149,6 @@ export class OpenAILanguageModel extends LanguageModel {
                   totalTokens: result.response.body.usage.total_tokens,
                 }
               : undefined,
-            metadata: batch.metadata as BatchMetadata,
             error: result.error
               ? {
                   code: result.error.code || 'unknown_error',

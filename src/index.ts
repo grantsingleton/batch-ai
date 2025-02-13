@@ -46,7 +46,7 @@ export function anthropic(
 
 export interface CreateObjectBatchParams {
   model: LanguageModel;
-  prompts: string[];
+  requests: BatchRequest<string>[];
   outputSchema: any;
 }
 
@@ -61,14 +61,9 @@ export interface CreateObjectBatchResponse {
  */
 export async function createObjectBatch({
   model,
-  prompts,
+  requests,
   outputSchema,
 }: CreateObjectBatchParams): Promise<CreateObjectBatchResponse> {
-  const requests: BatchRequest<string>[] = prompts.map((prompt, index) => ({
-    customId: `request-${index}`,
-    input: prompt,
-  }));
-
   const batchId = await model.createBatch(requests, outputSchema);
   return { batchId };
 }

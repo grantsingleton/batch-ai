@@ -146,7 +146,6 @@ interface Batch {
   createdAt: Date;
   completedAt?: Date;
   expiresAt?: Date;
-  metadata?: Record<string, string>;
 }
 ```
 

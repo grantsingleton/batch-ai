@@ -19,10 +19,6 @@ export interface BatchRequestCounts {
   expired?: number;
 }
 
-export interface BatchMetadata {
-  [key: string]: string;
-}
-
 // Base interfaces for batch operations
 export interface BatchRequest<T> {
   customId: string;
@@ -41,7 +37,6 @@ export interface BatchResponse<T> {
     completionTokens: number;
     totalTokens: number;
   };
-  metadata?: BatchMetadata;
 }
 
 export interface Batch {
@@ -51,7 +46,6 @@ export interface Batch {
   createdAt: Date;
   completedAt?: Date;
   expiresAt?: Date;
-  metadata?: BatchMetadata;
 }
 
 // Provider-specific interfaces
