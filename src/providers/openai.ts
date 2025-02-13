@@ -11,25 +11,22 @@ import {
   LanguageModel,
   LanguageModelConfig,
   BatchStatus,
+  BatchMetadata,
 } from '../types';
 
-export class OpenAILanguageModel implements LanguageModel {
+export class OpenAILanguageModel extends LanguageModel {
   public readonly provider = 'openai' as const;
   private client: OpenAI;
 
-  constructor(
-    public readonly modelId: string,
-    public readonly config: LanguageModelConfig
-  ) {
+  constructor(modelId: string, config?: LanguageModelConfig) {
+    super(modelId, config);
     this.client = new OpenAI({
-      apiKey: config.apiKey,
-      organization: config.organization,
-      baseURL: config.baseUrl,
+      apiKey: process.env.OPENAI_API_KEY || config?.apiKey,
     });
   }
 
-  private async createJsonlFile<T>(
-    requests: BatchRequest<T>[]
+  private async createJsonlFile(
+    requests: BatchRequest<string>[]
   ): Promise<string> {
     const tempDir = os.tmpdir();
     const tempFile = path.join(tempDir, `batch-${Date.now()}.jsonl`);
@@ -57,9 +54,9 @@ export class OpenAILanguageModel implements LanguageModel {
     return tempFile;
   }
 
-  async createBatch<T>(
-    requests: BatchRequest<T>[],
-    outputSchema: z.ZodSchema<any>
+  async createBatch(
+    requests: BatchRequest<string>[],
+    outputSchema: z.ZodSchema<unknown>
   ): Promise<string> {
     try {
       // Create JSONL file
@@ -109,6 +106,7 @@ export class OpenAILanguageModel implements LanguageModel {
         expiresAt: batch.expires_at
           ? new Date(batch.expires_at * 1000)
           : undefined,
+        metadata: batch.metadata as BatchMetadata,
       };
     } catch (error) {
       throw new BatchError(
@@ -119,7 +117,9 @@ export class OpenAILanguageModel implements LanguageModel {
     }
   }
 
-  async getBatchResults<T>(batchId: string): Promise<BatchResponse<T>[]> {
+  async getBatchResults<TOutput = unknown>(
+    batchId: string
+  ): Promise<BatchResponse<TOutput>[]> {
     try {
       const batch = await this.client.batches.retrieve(batchId);
 
@@ -141,7 +141,17 @@ export class OpenAILanguageModel implements LanguageModel {
           const result = JSON.parse(line);
           return {
             customId: result.custom_id,
-            output: result.response?.body?.choices?.[0]?.message?.content as T,
+            output: result.response?.body?.choices?.[0]?.message
+              ?.content as TOutput,
+            usage: result.response?.body?.usage
+              ? {
+                  promptTokens: result.response.body.usage.prompt_tokens,
+                  completionTokens:
+                    result.response.body.usage.completion_tokens,
+                  totalTokens: result.response.body.usage.total_tokens,
+                }
+              : undefined,
+            metadata: batch.metadata as BatchMetadata,
             error: result.error
               ? {
                   code: result.error.code || 'unknown_error',

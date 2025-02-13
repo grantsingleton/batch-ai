@@ -10,23 +10,20 @@ import {
   BatchStatus,
 } from '../types';
 
-export class AnthropicLanguageModel implements LanguageModel {
+export class AnthropicLanguageModel extends LanguageModel {
   public readonly provider = 'anthropic' as const;
   private client: Anthropic;
 
-  constructor(
-    public readonly modelId: string,
-    public readonly config: LanguageModelConfig
-  ) {
+  constructor(modelId: string, config: LanguageModelConfig) {
+    super(modelId, config);
     this.client = new Anthropic({
       apiKey: config.apiKey,
-      baseURL: config.baseUrl,
     });
   }
 
-  async createBatch<T>(
-    requests: BatchRequest<T>[],
-    outputSchema: z.ZodSchema<any>
+  async createBatch(
+    requests: BatchRequest<string>[],
+    outputSchema: z.ZodSchema<unknown>
   ): Promise<string> {
     try {
       const batch = await this.client.messages.batches.create({
@@ -38,7 +35,7 @@ export class AnthropicLanguageModel implements LanguageModel {
             messages: [
               {
                 role: 'user',
-                content: request.input as string,
+                content: request.input,
               },
             ],
           },
@@ -98,7 +95,9 @@ export class AnthropicLanguageModel implements LanguageModel {
     );
   }
 
-  async getBatchResults<T>(batchId: string): Promise<BatchResponse<T>[]> {
+  async getBatchResults<TOutput = unknown>(
+    batchId: string
+  ): Promise<BatchResponse<TOutput>[]> {
     try {
       const batch = await this.client.messages.batches.retrieve(batchId);
 
@@ -122,7 +121,7 @@ export class AnthropicLanguageModel implements LanguageModel {
             customId: result.custom_id,
             output:
               result.result.type === 'succeeded'
-                ? (result.result.message.content[0].text as T)
+                ? (result.result.message.content[0].text as TOutput)
                 : undefined,
             error:
               result.result.type !== 'succeeded'

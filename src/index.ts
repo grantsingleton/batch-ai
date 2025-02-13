@@ -27,7 +27,7 @@ export {
  */
 export function openai(
   modelId: string,
-  config: LanguageModelConfig
+  config?: LanguageModelConfig
 ): LanguageModel {
   return new OpenAILanguageModel(modelId, config);
 }
@@ -44,43 +44,56 @@ export function anthropic(
   return new AnthropicLanguageModel(modelId, config);
 }
 
+export interface CreateObjectBatchParams {
+  model: LanguageModel;
+  prompts: string[];
+  outputSchema: any;
+}
+
+export interface CreateObjectBatchResponse {
+  batchId: string;
+}
+
 /**
  * Creates a batch of requests to be processed by a language model
- * @param model The language model to use
- * @param prompts Array of prompts to process
- * @param outputSchema Zod schema for validating and typing the output
+ * @param params Object containing the model, prompts, and output schema
  * @returns Promise resolving to the batch ID
  */
-export async function createObjectBatch<T>(
-  model: LanguageModel,
-  prompts: string[],
-  outputSchema: z.ZodSchema<T>
-): Promise<string> {
+export async function createObjectBatch({
+  model,
+  prompts,
+  outputSchema,
+}: CreateObjectBatchParams): Promise<CreateObjectBatchResponse> {
   const requests: BatchRequest<string>[] = prompts.map((prompt, index) => ({
     customId: `request-${index}`,
     input: prompt,
   }));
 
-  return model.createBatch(requests, outputSchema);
+  const batchId = await model.createBatch(requests, outputSchema);
+  return { batchId };
+}
+
+export interface GetObjectBatchParams {
+  model: LanguageModel;
+  batchId: string;
 }
 
 /**
  * Gets the status and results of a batch
- * @param model The language model that created the batch
- * @param batchId The ID of the batch to retrieve
+ * @param params Object containing the model and batch ID
  * @returns Promise resolving to the batch status and results
  */
-export async function getObjectBatch(
-  model: LanguageModel,
-  batchId: string
-): Promise<{
+export async function getObjectBatch<TOutput>({
+  model,
+  batchId,
+}: GetObjectBatchParams): Promise<{
   batch: Batch;
-  results?: BatchResponse<unknown>[];
+  results?: BatchResponse<TOutput>[];
 }> {
   const batch = await model.getBatch(batchId);
 
   if (batch.status === 'completed') {
-    const results = await model.getBatchResults(batchId);
+    const results = await model.getBatchResults<TOutput>(batchId);
     return { batch, results };
   }
 

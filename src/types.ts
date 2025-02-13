@@ -36,6 +36,12 @@ export interface BatchResponse<T> {
     code: string;
     message: string;
   };
+  usage?: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
+  metadata?: BatchMetadata;
 }
 
 export interface Batch {
@@ -50,24 +56,30 @@ export interface Batch {
 
 // Provider-specific interfaces
 export interface LanguageModelConfig {
-  apiKey: string;
-  organization?: string;
-  baseUrl?: string;
+  apiKey?: string;
 }
 
-export interface LanguageModel {
-  provider: 'openai' | 'anthropic';
-  modelId: string;
-  config: LanguageModelConfig;
+export abstract class LanguageModel {
+  constructor(
+    public readonly modelId: string,
+    public readonly config?: LanguageModelConfig
+  ) {}
+
+  abstract readonly provider: 'openai' | 'anthropic';
 
   // Core methods that each provider must implement
-  createBatch<T>(
-    requests: BatchRequest<T>[],
-    outputSchema: z.ZodSchema<any>
+  abstract createBatch(
+    requests: BatchRequest<string>[],
+    outputSchema: z.ZodSchema<unknown>
   ): Promise<string>;
-  getBatch(batchId: string): Promise<Batch>;
-  getBatchResults<T>(batchId: string): Promise<BatchResponse<T>[]>;
-  cancelBatch?(batchId: string): Promise<void>;
+
+  abstract getBatch(batchId: string): Promise<Batch>;
+
+  abstract getBatchResults<TOutput = unknown>(
+    batchId: string
+  ): Promise<BatchResponse<TOutput>[]>;
+
+  abstract cancelBatch?(batchId: string): Promise<void>;
 }
 
 // Error types
