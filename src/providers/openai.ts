@@ -12,6 +12,7 @@ import {
   LanguageModelConfig,
   BatchStatus,
 } from '../types';
+import { zodResponseFormat } from 'openai/helpers/zod';
 
 export class OpenAILanguageModel extends LanguageModel {
   public readonly provider = 'openai' as const;
@@ -25,10 +26,13 @@ export class OpenAILanguageModel extends LanguageModel {
   }
 
   private async createJsonlFile(
-    requests: BatchRequest<string>[]
+    requests: BatchRequest<string>[],
+    outputSchema: z.ZodSchema<any>
   ): Promise<string> {
     const tempDir = os.tmpdir();
     const tempFile = path.join(tempDir, `batch-${Date.now()}.jsonl`);
+
+    console.log('timestamp is 10:52');
 
     const jsonlContent = requests
       .map((request) =>
@@ -44,6 +48,7 @@ export class OpenAILanguageModel extends LanguageModel {
                 content: request.input,
               },
             ],
+            response_format: zodResponseFormat(outputSchema, 'moderation'),
           },
         })
       )
@@ -59,7 +64,7 @@ export class OpenAILanguageModel extends LanguageModel {
   ): Promise<string> {
     try {
       // Create JSONL file
-      const jsonlFile = await this.createJsonlFile(requests);
+      const jsonlFile = await this.createJsonlFile(requests, outputSchema);
 
       // Upload file
       const file = await this.client.files.create({
