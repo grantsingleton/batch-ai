@@ -37,6 +37,14 @@
     "sdk"
   ],
   "author": "Grant Singleton",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/grantsingleton/batch-ai.git"
+  },
+  "homepage": "https://github.com/grantsingleton/batch-ai#readme",
+  "bugs": {
+    "url": "https://github.com/grantsingleton/batch-ai/issues"
+  },
   "license": "MIT",
   "devDependencies": {
     "@types/jest": "^29.5.12",

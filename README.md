@@ -1,6 +1,6 @@
 # batch-ai
 
-[![npm version](https://badge.fury.io/js/batch-ai.svg)](https://badge.fury.io/js/batch-ai)
+[![npm version](https://img.shields.io/npm/v/batch-ai.svg)](https://www.npmjs.com/package/batch-ai)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
 
@@ -18,12 +18,12 @@ Inspired by the [Vercel AI SDK](https://sdk.vercel.ai/docs), this library aims t
   - Coming Soon:
     - Google (Gemini)
     - xAI (Grok)
-    - _Want another provider? [Open an issue](https://github.com/yourusername/batch-ai/issues/new)!_
+    - _Want another provider? [Open an issue](https://github.com/grantsingleton/batch-ai/issues/new)!_
 - 🛠️ **Batch Operations**:
   - `createObjectBatch`: Generate structured outputs (JSON) from prompts
   - Coming Soon:
     - `generateTextBatch`: Generate free-form text responses
-    - _Want to speed up text batch development? [Open an issue](https://github.com/yourusername/batch-ai/issues/new)!_
+    - _Want to speed up text batch development? [Open an issue](https://github.com/grantsingleton/batch-ai/issues/new)!_
 - ⚡ **Performance**: Process thousands of prompts efficiently
 - 🔍 **Error Handling**: Robust error handling with detailed error types
 
