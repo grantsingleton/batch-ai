@@ -1,118 +1,204 @@
-# Batch AI
+# batch-ai
 
-A unified TypeScript SDK for making batch AI requests across different model providers. Currently supports OpenAI and Anthropic batch APIs.
+[![npm version](https://badge.fury.io/js/batch-ai.svg)](https://badge.fury.io/js/batch-ai)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
+
+A unified TypeScript SDK for making batch AI requests across different model providers. Process thousands of prompts efficiently using official batch APIs from OpenAI and Anthropic.
+
+Inspired by the [Vercel AI SDK](https://sdk.vercel.ai/docs), this library aims to provide a unified interface for batch processing across different AI providers. Just like Vercel's SDK allows developers to easily switch between different LLM providers without changing their application code, batch-ai lets you handle large-scale batch processing with the same simplicity - write once, run with any supported provider.
 
 ## Features
 
-- Unified interface for multiple AI providers
-- Type-safe responses with Zod schema validation
-- Simple API for creating and monitoring batches
-- Support for OpenAI and Anthropic batch APIs
-- Written in TypeScript with full type definitions
+- 🚀 **Unified Interface**: Single API for multiple AI providers
+- 🔒 **Type Safety**: Full TypeScript support with Zod schema validation
+- 📦 **Provider Support**:
+  - OpenAI (GPT-4, GPT-3.5-turbo)
+  - Anthropic (Claude 3)
+  - Coming Soon:
+    - Google (Gemini)
+    - xAI (Grok)
+    - _Want another provider? [Open an issue](https://github.com/yourusername/batch-ai/issues/new)!_
+- 🛠️ **Batch Operations**:
+  - `createObjectBatch`: Generate structured outputs (JSON) from prompts
+  - Coming Soon:
+    - `generateTextBatch`: Generate free-form text responses
+    - _Want to speed up text batch development? [Open an issue](https://github.com/yourusername/batch-ai/issues/new)!_
+- ⚡ **Performance**: Process thousands of prompts efficiently
+- 🔍 **Error Handling**: Robust error handling with detailed error types
 
 ## Installation
 
 ```bash
 npm install batch-ai
+# or
+yarn add batch-ai
+# or
+pnpm add batch-ai
 ```
 
-## Usage
+## Quick Start
 
-### Basic Example
+### API Key Configuration
+
+You can configure your API keys in one of two ways:
+
+1. Environment Variables (Recommended):
+
+```bash
+# .env
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-...
+```
+
+2. Explicit Configuration:
+
+```typescript
+const model = openai('gpt-4', {
+  apiKey: 'sk-...', // Your OpenAI API key
+});
+
+// or
+const model = anthropic('claude-3-opus-20240229', {
+  apiKey: 'sk-...', // Your Anthropic API key
+});
+```
+
+### Basic Usage
 
 ```typescript
 import { z } from 'zod';
-import { openai, anthropic, createObjectBatch, getObjectBatch } from 'batch-ai';
+import { openai, createObjectBatch, getObjectBatch } from 'batch-ai';
 
-// Define your output schema
+// Define your output schema using Zod
 const responseSchema = z.object({
   sentiment: z.enum(['positive', 'negative', 'neutral']),
-  confidence: z.number(),
+  confidence: z.number().min(0).max(1),
 });
 
-// Initialize a model (OpenAI or Anthropic)
+// Initialize the model
 const model = openai('gpt-4', {
-  apiKey: process.env.OPENAI_API_KEY!,
+  apiKey: process.env.OPENAI_API_KEY, // Optional if set in environment
 });
 
-// Or use Anthropic
-const model = anthropic('claude-3-opus-20240229', {
-  apiKey: process.env.ANTHROPIC_API_KEY!,
-});
-
-// Create a batch of requests
-const prompts = [
-  'I love this product!',
-  'This is terrible.',
-  "It's okay I guess.",
+// Prepare your batch requests
+const requests = [
+  {
+    customId: 'review-1',
+    input: 'I absolutely love this product! Best purchase ever.',
+  },
+  {
+    customId: 'review-2',
+    input: 'This is terrible, would not recommend.',
+  },
 ];
 
-async function processBatch() {
-  // Create the batch
-  const batchId = await createObjectBatch(model, prompts, responseSchema);
+// Create a new batch
+const { batchId } = await createObjectBatch({
+  model,
+  requests,
+  outputSchema: responseSchema,
+});
 
-  // Poll for results
-  while (true) {
-    const { batch, results } = await getObjectBatch(model, batchId);
+// Later, retrieve the batch results
+const { batch, results } = await getObjectBatch({
+  model,
+  batchId,
+});
 
-    if (batch.status === 'completed') {
-      console.log('Results:', results);
-      break;
-    }
-
-    if (batch.status === 'failed') {
-      console.error('Batch failed');
-      break;
-    }
-
-    // Wait before polling again
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-  }
+// Check batch status
+if (batch.status === 'completed' && results) {
+  console.log('Results:', results);
+  // [
+  //   {
+  //     customId: 'review-1',
+  //     output: { sentiment: 'positive', confidence: 0.98 }
+  //   },
+  //   {
+  //     customId: 'review-2',
+  //     output: { sentiment: 'negative', confidence: 0.95 }
+  //   }
+  // ]
 }
 ```
 
-### Configuration
+## Supported Providers
 
-Both OpenAI and Anthropic models accept the following configuration options:
+### OpenAI
 
 ```typescript
-interface LanguageModelConfig {
-  apiKey: string;
-  organization?: string; // OpenAI only
-  baseUrl?: string; // Custom API endpoint
-}
+import { openai } from 'batch-ai';
+
+const model = openai('gpt-4', {
+  apiKey: process.env.OPENAI_API_KEY,
+  organization: 'your-org-id', // Optional
+});
+```
+
+### Anthropic
+
+```typescript
+import { anthropic } from 'batch-ai';
+
+const model = anthropic('claude-3-opus-20240229', {
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
 ```
 
 ## API Reference
 
 ### Factory Functions
 
-#### `openai(modelId: string, config: LanguageModelConfig): LanguageModel`
+#### `openai(modelId: OpenAIModel, config?: LanguageModelConfig)`
 
 Creates an OpenAI language model instance.
 
-#### `anthropic(modelId: string, config: LanguageModelConfig): LanguageModel`
+```typescript
+interface LanguageModelConfig {
+  apiKey?: string;
+  organization?: string; // OpenAI only
+  baseUrl?: string; // Optional custom API endpoint
+}
+```
+
+#### `anthropic(modelId: AnthropicModel, config?: LanguageModelConfig)`
 
 Creates an Anthropic language model instance.
 
 ### Batch Operations
 
-#### `createObjectBatch<T>(model: LanguageModel, prompts: string[], outputSchema: z.ZodSchema<T>): Promise<string>`
+#### `createObjectBatch`
 
 Creates a new batch of requests.
 
-- `model`: The language model to use
-- `prompts`: Array of prompts to process
-- `outputSchema`: Zod schema for validating and typing the output
-- Returns: Promise resolving to the batch ID
+```typescript
+interface CreateObjectBatchParams {
+  model: LanguageModel;
+  requests: BatchRequest<string>[];
+  outputSchema: z.ZodSchema<unknown>;
+}
 
-#### `getObjectBatch(model: LanguageModel, batchId: string): Promise<{ batch: Batch; results?: BatchResponse<unknown>[]; }>`
+interface CreateObjectBatchResponse {
+  batchId: string;
+}
+```
 
-Gets the status and results of a batch.
+#### `getObjectBatch`
 
-- `model`: The language model that created the batch
-- `batchId`: The ID of the batch to retrieve
-- Returns: Promise resolving to the batch status and results (if available)
+Retrieves batch status and results.
+
+```typescript
+interface GetObjectBatchParams {
+  model: LanguageModel;
+  batchId: string;
+}
+
+// Returns
+interface {
+  batch: Batch;
+  results?: BatchResponse<TOutput>[];
+}
+```
 
 ### Types
 
@@ -129,26 +215,6 @@ type BatchStatus =
   | 'cancelled';
 ```
 
-#### `Batch`
-
-```typescript
-interface Batch {
-  id: string;
-  status: BatchStatus;
-  requestCounts: {
-    total: number;
-    completed: number;
-    failed: number;
-    processing?: number;
-    cancelled?: number;
-    expired?: number;
-  };
-  createdAt: Date;
-  completedAt?: Date;
-  expiresAt?: Date;
-}
-```
-
 #### `BatchResponse<T>`
 
 ```typescript
@@ -159,12 +225,17 @@ interface BatchResponse<T> {
     code: string;
     message: string;
   };
+  usage?: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
 }
 ```
 
 ## Error Handling
 
-The SDK throws `BatchError` instances for various error conditions:
+The SDK throws typed `BatchError` instances:
 
 ```typescript
 class BatchError extends Error {
@@ -174,12 +245,26 @@ class BatchError extends Error {
 
 Common error codes:
 
-- `batch_creation_failed`
-- `batch_retrieval_failed`
-- `results_not_ready`
-- `results_retrieval_failed`
-- `batch_cancellation_failed`
+- `batch_creation_failed`: Failed to create a new batch
+- `batch_retrieval_failed`: Failed to retrieve batch status
+- `results_not_ready`: Batch results are not yet available
+- `results_retrieval_failed`: Failed to retrieve batch results
+- `batch_cancellation_failed`: Failed to cancel batch
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
 
-MIT
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+```
+
+```
