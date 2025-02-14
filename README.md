@@ -13,7 +13,7 @@ Inspired by the [Vercel AI SDK](https://sdk.vercel.ai/docs), this library aims t
 - 🚀 **Unified Interface**: Single API for multiple AI providers
 - 🔒 **Type Safety**: Full TypeScript support with Zod schema validation
 - 📦 **Provider Support**:
-  - OpenAI (GPT-4, GPT-3.5-turbo)
+  - OpenAI (GPT-4o, GPT-3.5-turbo)
   - Anthropic (Claude 3)
   - Coming Soon:
     - Google (Gemini)
@@ -54,12 +54,12 @@ ANTHROPIC_API_KEY=sk-...
 2. Explicit Configuration:
 
 ```typescript
-const model = openai('gpt-4', {
+const model = openai('gpt-4o', {
   apiKey: 'sk-...', // Your OpenAI API key
 });
 
 // or
-const model = anthropic('claude-3-opus-20240229', {
+const model = anthropic('claude-3-sonnet-20240620', {
   apiKey: 'sk-...', // Your Anthropic API key
 });
 ```
@@ -77,7 +77,7 @@ const responseSchema = z.object({
 });
 
 // Initialize the model
-const model = openai('gpt-4', {
+const model = openai('gpt-4o', {
   apiKey: process.env.OPENAI_API_KEY, // Optional if set in environment
 });
 
@@ -129,7 +129,7 @@ if (batch.status === 'completed' && results) {
 ```typescript
 import { openai } from 'batch-ai';
 
-const model = openai('gpt-4', {
+const model = openai('gpt-4o', {
   apiKey: process.env.OPENAI_API_KEY,
   organization: 'your-org-id', // Optional
 });
@@ -140,7 +140,7 @@ const model = openai('gpt-4', {
 ```typescript
 import { anthropic } from 'batch-ai';
 
-const model = anthropic('claude-3-opus-20240229', {
+const model = anthropic('claude-3-sonnet-20240620', {
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 ```
