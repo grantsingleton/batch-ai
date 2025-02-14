@@ -93,7 +93,7 @@ describe('AnthropicLanguageModel', () => {
         ];
         let index = 0;
         return {
-          async next() {
+          async next(): Promise<IteratorResult<any>> {
             if (index < items.length) {
               return { value: items[index++], done: false };
             }
@@ -124,9 +124,9 @@ describe('AnthropicLanguageModel', () => {
     it('should successfully create a batch', async () => {
       // Mock the Anthropic API response
       const Anthropic = require('@anthropic-ai/sdk').Anthropic;
-      const mockAnthropic = new Anthropic();
+      const anthropicInstance = new Anthropic();
 
-      mockAnthropic.messages.batches.create.mockResolvedValue({
+      anthropicInstance.messages.batches.create.mockResolvedValue({
         id: 'batch_abc123',
         type: 'message_batch',
         processing_status: 'in_progress',
@@ -137,7 +137,7 @@ describe('AnthropicLanguageModel', () => {
 
       // Verify the results
       expect(batchId).toBe('batch_abc123');
-      expect(mockAnthropic.messages.batches.create).toHaveBeenCalledWith({
+      expect(anthropicInstance.messages.batches.create).toHaveBeenCalledWith({
         requests: expect.arrayContaining([
           expect.objectContaining({
             custom_id: 'test-1',
@@ -153,9 +153,9 @@ describe('AnthropicLanguageModel', () => {
     it('should handle API errors gracefully', async () => {
       // Mock the Anthropic API to throw an error
       const Anthropic = require('@anthropic-ai/sdk').Anthropic;
-      const mockAnthropic = new Anthropic();
+      const anthropicInstance = new Anthropic();
 
-      mockAnthropic.messages.batches.create.mockRejectedValueOnce(
+      anthropicInstance.messages.batches.create.mockRejectedValueOnce(
         new Error('API error')
       );
 
@@ -251,7 +251,7 @@ describe('AnthropicLanguageModel', () => {
           ];
           let index = 0;
           return {
-            async next() {
+            async next(): Promise<IteratorResult<any>> {
               if (index < items.length) {
                 return { value: items[index++], done: false };
               }
@@ -309,7 +309,7 @@ describe('AnthropicLanguageModel', () => {
           ];
           let index = 0;
           return {
-            async next() {
+            async next(): Promise<IteratorResult<any>> {
               if (index < items.length) {
                 return { value: items[index++], done: false };
               }
@@ -335,7 +335,7 @@ describe('AnthropicLanguageModel', () => {
     it('should handle batch not completed', async () => {
       // Mock the Anthropic API to return in_progress status
       const Anthropic = require('@anthropic-ai/sdk').Anthropic;
-      const mockAnthropic = new Anthropic();
+      new Anthropic(); // Just instantiate to trigger the mock
 
       // Clear the default mocks from beforeEach
       mockRetrieve.mockReset();
