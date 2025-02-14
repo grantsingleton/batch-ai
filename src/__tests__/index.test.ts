@@ -49,9 +49,16 @@ describe('SDK Functions', () => {
       const model = openai('gpt-4', { apiKey: 'test-key' });
       (model.createBatch as jest.Mock).mockResolvedValue('batch-123');
 
-      const batchId = await createObjectBatch(model, prompts, testSchema);
+      const batchId = await createObjectBatch({
+        model,
+        requests: prompts.map((prompt, index) => ({
+          customId: `request-${index}`,
+          input: prompt,
+        })),
+        outputSchema: testSchema,
+      });
 
-      expect(batchId).toBe('batch-123');
+      expect(batchId.batchId).toBe('batch-123');
       expect(model.createBatch).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.objectContaining({
@@ -67,9 +74,16 @@ describe('SDK Functions', () => {
       const model = anthropic('claude-3-opus-20240229', { apiKey: 'test-key' });
       (model.createBatch as jest.Mock).mockResolvedValue('batch_abc123');
 
-      const batchId = await createObjectBatch(model, prompts, testSchema);
+      const batchId = await createObjectBatch({
+        model,
+        requests: prompts.map((prompt, index) => ({
+          customId: `request-${index}`,
+          input: prompt,
+        })),
+        outputSchema: testSchema,
+      });
 
-      expect(batchId).toBe('batch_abc123');
+      expect(batchId.batchId).toBe('batch_abc123');
       expect(model.createBatch).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.objectContaining({
@@ -88,7 +102,14 @@ describe('SDK Functions', () => {
       );
 
       await expect(
-        createObjectBatch(model, prompts, testSchema)
+        createObjectBatch({
+          model,
+          requests: prompts.map((prompt, index) => ({
+            customId: `request-${index}`,
+            input: prompt,
+          })),
+          outputSchema: testSchema,
+        })
       ).rejects.toThrow(BatchError);
     });
   });
@@ -121,7 +142,10 @@ describe('SDK Functions', () => {
         },
       ]);
 
-      const result = await getObjectBatch(model, 'batch-123');
+      const result = await getObjectBatch({
+        model,
+        batchId: 'batch-123',
+      });
 
       expect(result.batch.status).toBe('completed');
       expect(result.results).toHaveLength(3);
@@ -144,7 +168,10 @@ describe('SDK Functions', () => {
         createdAt: new Date(),
       });
 
-      const result = await getObjectBatch(model, 'batch-123');
+      const result = await getObjectBatch({
+        model,
+        batchId: 'batch-123',
+      });
 
       expect(result.batch.status).toBe('in_progress');
       expect(result.results).toBeUndefined();
@@ -157,9 +184,12 @@ describe('SDK Functions', () => {
         new BatchError('API error', 'batch_retrieval_failed', 'batch-123')
       );
 
-      await expect(getObjectBatch(model, 'batch-123')).rejects.toThrow(
-        BatchError
-      );
+      await expect(
+        getObjectBatch({
+          model,
+          batchId: 'batch-123',
+        })
+      ).rejects.toThrow(BatchError);
     });
   });
 });

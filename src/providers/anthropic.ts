@@ -123,6 +123,16 @@ export class AnthropicLanguageModel extends LanguageModel {
     batchId: string
   ): Promise<BatchResponse<TOutput>[]> {
     try {
+      const batch = await this.client.messages.batches.retrieve(batchId);
+
+      if (batch.processing_status !== 'ended') {
+        throw new BatchError(
+          'Batch results not yet available',
+          'results_not_ready',
+          batchId
+        );
+      }
+
       const results = await this.client.messages.batches.results(batchId);
       const responseArray: MessageBatchIndividualResponse[] = [];
 

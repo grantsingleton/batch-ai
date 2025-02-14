@@ -72,8 +72,8 @@ describe('OpenAILanguageModel', () => {
     mockContent.mockResolvedValue({
       text: () =>
         Promise.resolve(`
-        {"custom_id":"test-1","response":{"status_code":200,"body":{"choices":[{"message":{"content":"Hello!"}}]}}}
-        {"custom_id":"test-2","response":{"status_code":200,"body":{"choices":[{"message":{"content":"Hi there!"}}]}}}
+        {"custom_id":"test-1","response":{"status_code":200,"body":{"choices":[{"message":{"content":"{\\\"sentiment\\\":\\\"positive\\\",\\\"confidence\\\":0.9}"}}]}}}
+        {"custom_id":"test-2","response":{"status_code":200,"body":{"choices":[{"message":{"content":"{\\\"sentiment\\\":\\\"negative\\\",\\\"confidence\\\":0.8}"}}]}}}
       `),
     });
 
@@ -159,9 +159,15 @@ describe('OpenAILanguageModel', () => {
       // Verify the results
       expect(results).toHaveLength(2);
       expect(results[0].customId).toBe('test-1');
-      expect(results[0].output).toBe('Hello!');
+      expect(results[0].output).toEqual({
+        sentiment: 'positive',
+        confidence: 0.9,
+      });
       expect(results[1].customId).toBe('test-2');
-      expect(results[1].output).toBe('Hi there!');
+      expect(results[1].output).toEqual({
+        sentiment: 'negative',
+        confidence: 0.8,
+      });
     });
 
     it('should handle missing output file', async () => {

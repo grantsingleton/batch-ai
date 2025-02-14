@@ -5,6 +5,7 @@ import { BatchError } from '../types';
 // Mock the Anthropic client
 const mockCreate = jest.fn();
 const mockRetrieve = jest.fn();
+const mockResults = jest.fn();
 const mockCancel = jest.fn();
 
 jest.mock('@anthropic-ai/sdk', () => ({
@@ -13,14 +14,12 @@ jest.mock('@anthropic-ai/sdk', () => ({
       batches: {
         create: mockCreate,
         retrieve: mockRetrieve,
+        results: mockResults,
         cancel: mockCancel,
       },
     },
   })),
 }));
-
-// Mock global fetch for results retrieval
-global.fetch = jest.fn();
 
 describe('AnthropicLanguageModel', () => {
   let model: AnthropicLanguageModel;
@@ -29,9 +28,9 @@ describe('AnthropicLanguageModel', () => {
   beforeEach(() => {
     // Clear all mocks between tests
     jest.clearAllMocks();
-    (global.fetch as jest.Mock).mockClear();
     mockCreate.mockClear();
     mockRetrieve.mockClear();
+    mockResults.mockClear();
     mockCancel.mockClear();
 
     // Set default successful responses
@@ -54,7 +53,54 @@ describe('AnthropicLanguageModel', () => {
       created_at: '2024-02-12T00:00:00Z',
       ended_at: '2024-02-12T00:01:00Z',
       expires_at: '2024-02-13T00:00:00Z',
-      results_url: 'https://api.anthropic.com/results',
+    });
+
+    // Mock the results method to return an async iterator
+    mockResults.mockResolvedValue({
+      [Symbol.asyncIterator]: () => {
+        const items = [
+          {
+            custom_id: 'test-1',
+            result: {
+              type: 'succeeded',
+              message: {
+                content: [
+                  {
+                    type: 'tool_use',
+                    name: 'format_response',
+                    input: {
+                      response: { sentiment: 'positive', confidence: 0.9 },
+                    },
+                  },
+                ],
+                usage: {
+                  input_tokens: 100,
+                  output_tokens: 50,
+                },
+              },
+            },
+          },
+          {
+            custom_id: 'test-2',
+            result: {
+              type: 'failed',
+              error: {
+                type: 'api_error',
+                message: 'Failed to process request',
+              },
+            },
+          },
+        ];
+        let index = 0;
+        return {
+          async next() {
+            if (index < items.length) {
+              return { value: items[index++], done: false };
+            }
+            return { value: undefined, done: true };
+          },
+        };
+      },
     });
 
     mockCancel.mockResolvedValue(undefined);
@@ -166,16 +212,53 @@ describe('AnthropicLanguageModel', () => {
       mockAnthropic.messages.batches.retrieve.mockResolvedValue({
         id: 'batch_abc123',
         processing_status: 'ended',
-        results_url: 'https://api.anthropic.com/results',
       });
 
-      // Mock the fetch response for results
-      (global.fetch as jest.Mock).mockResolvedValue({
-        text: () =>
-          Promise.resolve(`
-          {"custom_id":"test-1","result":{"type":"succeeded","message":{"content":[{"type":"text","text":"Hello!"}]}}}
-          {"custom_id":"test-2","result":{"type":"succeeded","message":{"content":[{"type":"text","text":"Hi there!"}]}}}
-        `),
+      mockAnthropic.messages.batches.results.mockResolvedValue({
+        [Symbol.asyncIterator]: () => {
+          const items = [
+            {
+              custom_id: 'test-1',
+              result: {
+                type: 'succeeded',
+                message: {
+                  content: [
+                    {
+                      type: 'tool_use',
+                      name: 'format_response',
+                      input: {
+                        response: { sentiment: 'positive', confidence: 0.9 },
+                      },
+                    },
+                  ],
+                  usage: {
+                    input_tokens: 100,
+                    output_tokens: 50,
+                  },
+                },
+              },
+            },
+            {
+              custom_id: 'test-2',
+              result: {
+                type: 'failed',
+                error: {
+                  type: 'api_error',
+                  message: 'Failed to process request',
+                },
+              },
+            },
+          ];
+          let index = 0;
+          return {
+            async next() {
+              if (index < items.length) {
+                return { value: items[index++], done: false };
+              }
+              return { value: undefined, done: true };
+            },
+          };
+        },
       });
 
       // Execute the test
@@ -184,26 +267,21 @@ describe('AnthropicLanguageModel', () => {
       // Verify the results
       expect(results).toHaveLength(2);
       expect(results[0].customId).toBe('test-1');
-      expect(results[0].output).toBe('Hello!');
-      expect(results[1].customId).toBe('test-2');
-      expect(results[1].output).toBe('Hi there!');
-    });
-
-    it('should handle missing results URL', async () => {
-      // Mock the Anthropic API to return no results URL
-      const Anthropic = require('@anthropic-ai/sdk').Anthropic;
-      const mockAnthropic = new Anthropic();
-
-      mockAnthropic.messages.batches.retrieve.mockResolvedValueOnce({
-        id: 'batch_abc123',
-        processing_status: 'in_progress',
-        results_url: null,
+      expect(results[0].output).toEqual({
+        sentiment: 'positive',
+        confidence: 0.9,
       });
-
-      // Execute the test and verify error handling
-      await expect(model.getBatchResults('batch_abc123')).rejects.toThrow(
-        'Batch results not yet available'
-      );
+      expect(results[0].usage).toEqual({
+        promptTokens: 100,
+        completionTokens: 50,
+        totalTokens: 150,
+      });
+      expect(results[1].customId).toBe('test-2');
+      expect(results[1].output).toBeUndefined();
+      expect(results[1].error).toEqual({
+        code: 'failed',
+        message: 'Request failed',
+      });
     });
 
     it('should handle failed requests in results', async () => {
@@ -214,15 +292,31 @@ describe('AnthropicLanguageModel', () => {
       mockAnthropic.messages.batches.retrieve.mockResolvedValue({
         id: 'batch_abc123',
         processing_status: 'ended',
-        results_url: 'https://api.anthropic.com/results',
       });
 
-      // Mock the fetch response with a failed request
-      (global.fetch as jest.Mock).mockResolvedValue({
-        text: () =>
-          Promise.resolve(`
-          {"custom_id":"test-1","result":{"type":"errored","error":{"message":"Rate limit exceeded"}}}
-        `),
+      mockAnthropic.messages.batches.results.mockResolvedValue({
+        [Symbol.asyncIterator]: () => {
+          const items = [
+            {
+              custom_id: 'test-1',
+              result: {
+                type: 'errored',
+                error: {
+                  message: 'Rate limit exceeded',
+                },
+              },
+            },
+          ];
+          let index = 0;
+          return {
+            async next() {
+              if (index < items.length) {
+                return { value: items[index++], done: false };
+              }
+              return { value: undefined, done: true };
+            },
+          };
+        },
       });
 
       // Execute the test
@@ -234,8 +328,32 @@ describe('AnthropicLanguageModel', () => {
       expect(results[0].output).toBeUndefined();
       expect(results[0].error).toEqual({
         code: 'errored',
-        message: 'Rate limit exceeded',
+        message: 'Request failed',
       });
+    });
+
+    it('should handle batch not completed', async () => {
+      // Mock the Anthropic API to return in_progress status
+      const Anthropic = require('@anthropic-ai/sdk').Anthropic;
+      const mockAnthropic = new Anthropic();
+
+      // Clear the default mocks from beforeEach
+      mockRetrieve.mockReset();
+      mockResults.mockReset();
+
+      // Mock retrieve to return in_progress status
+      mockRetrieve.mockResolvedValue({
+        id: 'batch_abc123',
+        processing_status: 'in_progress',
+      });
+
+      // Execute the test and verify error handling
+      await expect(model.getBatchResults('batch_abc123')).rejects.toThrow(
+        'Batch results not yet available'
+      );
+
+      // Verify results was not called
+      expect(mockResults).not.toHaveBeenCalled();
     });
   });
 
