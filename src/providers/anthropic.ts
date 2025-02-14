@@ -14,30 +14,66 @@ export class AnthropicLanguageModel extends LanguageModel {
   public readonly provider = 'anthropic' as const;
   private client: Anthropic;
 
-  constructor(modelId: string, config: LanguageModelConfig) {
+  constructor(modelId: string, config?: LanguageModelConfig) {
     super(modelId, config);
     this.client = new Anthropic({
-      apiKey: config.apiKey,
+      apiKey: process.env.ANTHROPIC_API_KEY || config?.apiKey,
     });
   }
 
   async createBatch(
     requests: BatchRequest<string>[],
-    outputSchema: z.ZodSchema<unknown>
+    outputSchema: z.ZodSchema<any>
   ): Promise<string> {
     try {
+      // Convert Zod schema to a JSON schema that matches Anthropic's types
+      const zodToJsonSchema = (schema: z.ZodSchema<any>) => {
+        if (schema instanceof z.ZodObject) {
+          const shape = schema.shape;
+          return {
+            type: 'object' as const,
+            properties: Object.fromEntries(
+              Object.entries(shape).map(([key, value]) => [
+                key,
+                {
+                  type:
+                    value instanceof z.ZodString
+                      ? ('string' as const)
+                      : ('any' as const),
+                },
+              ])
+            ),
+            required: Object.keys(shape),
+          };
+        }
+        return { type: 'object' as const, properties: {} };
+      };
+
       const batch = await this.client.messages.batches.create({
         requests: requests.map((request) => ({
           custom_id: request.customId,
           params: {
             model: this.modelId,
-            max_tokens: 1024,
+            max_tokens: 2048,
             messages: [
               {
                 role: 'user',
                 content: request.input,
               },
             ],
+            tools: [
+              {
+                name: 'format_response',
+                description:
+                  'Format the response according to the required schema',
+                input_schema: zodToJsonSchema(outputSchema),
+              },
+            ],
+            tool_choice: {
+              type: 'tool',
+              name: 'format_response',
+              disable_parallel_tool_use: true,
+            },
           },
         })),
       });
@@ -99,39 +135,24 @@ export class AnthropicLanguageModel extends LanguageModel {
     batchId: string
   ): Promise<BatchResponse<TOutput>[]> {
     try {
-      const batch = await this.client.messages.batches.retrieve(batchId);
+      const results = await this.client.messages.batches.results(batchId);
 
-      if (!batch.results_url) {
-        throw new BatchError(
-          'Batch results not yet available',
-          'results_not_ready',
-          batchId
-        );
-      }
-
-      const response = await fetch(batch.results_url);
-      const results = await response.text();
-
-      return results
-        .split('\n')
-        .filter((line) => line.trim())
-        .map((line) => {
-          const result = JSON.parse(line);
-          return {
-            customId: result.custom_id,
-            output:
-              result.result.type === 'succeeded'
-                ? (result.result.message.content[0].text as TOutput)
-                : undefined,
-            error:
-              result.result.type !== 'succeeded'
-                ? {
-                    code: result.result.type,
-                    message: result.result.error?.message || 'Request failed',
-                  }
-                : undefined,
-          };
-        });
+      return results.map((result) => {
+        return {
+          customId: result.custom_id,
+          output:
+            result.result.type === 'succeeded'
+              ? (result.result.message.content[0].text as TOutput)
+              : undefined,
+          error:
+            result.result.type !== 'succeeded'
+              ? {
+                  code: result.result.type,
+                  message: result.result.error?.message || 'Request failed',
+                }
+              : undefined,
+        };
+      });
     } catch (error) {
       throw new BatchError(
         error instanceof Error ? error.message : 'Unknown error',

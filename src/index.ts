@@ -39,7 +39,7 @@ export function openai(
  */
 export function anthropic(
   modelId: string,
-  config: LanguageModelConfig
+  config?: LanguageModelConfig
 ): LanguageModel {
   return new AnthropicLanguageModel(modelId, config);
 }
