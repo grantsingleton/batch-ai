@@ -32,8 +32,6 @@ export class OpenAILanguageModel extends LanguageModel {
     const tempDir = os.tmpdir();
     const tempFile = path.join(tempDir, `batch-${Date.now()}.jsonl`);
 
-    console.log('timestamp is 10:52');
-
     const jsonlContent = requests
       .map((request) =>
         JSON.stringify({
@@ -144,8 +142,9 @@ export class OpenAILanguageModel extends LanguageModel {
           const result = JSON.parse(line);
           return {
             customId: result.custom_id,
-            output: result.response?.body?.choices?.[0]?.message
-              ?.content as TOutput,
+            output: JSON.parse(
+              result.response?.body?.choices?.[0]?.message?.content
+            ) as TOutput,
             usage: result.response?.body?.usage
               ? {
                   promptTokens: result.response.body.usage.prompt_tokens,
