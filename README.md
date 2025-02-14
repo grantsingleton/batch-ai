@@ -13,8 +13,8 @@ Inspired by the [Vercel AI SDK](https://sdk.vercel.ai/docs), this library aims t
 - 🚀 **Unified Interface**: Single API for multiple AI providers
 - 🔒 **Type Safety**: Full TypeScript support with Zod schema validation
 - 📦 **Provider Support**:
-  - OpenAI (GPT-4o, GPT-3.5-turbo)
-  - Anthropic (Claude 3)
+  - OpenAI (gpt-4o, etc)
+  - Anthropic (Claude 3.5 Sonnet, etc)
   - Coming Soon:
     - Google (Gemini)
     - xAI (Grok)
@@ -59,7 +59,7 @@ const model = openai('gpt-4o', {
 });
 
 // or
-const model = anthropic('claude-3-sonnet-20240620', {
+const model = anthropic('claude-3-5-sonnet-20241022', {
   apiKey: 'sk-...', // Your Anthropic API key
 });
 ```
@@ -131,7 +131,6 @@ import { openai } from 'batch-ai';
 
 const model = openai('gpt-4o', {
   apiKey: process.env.OPENAI_API_KEY,
-  organization: 'your-org-id', // Optional
 });
 ```
 
@@ -140,7 +139,7 @@ const model = openai('gpt-4o', {
 ```typescript
 import { anthropic } from 'batch-ai';
 
-const model = anthropic('claude-3-sonnet-20240620', {
+const model = anthropic('claude-3-5-sonnet-20241022', {
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 ```
@@ -156,8 +155,6 @@ Creates an OpenAI language model instance.
 ```typescript
 interface LanguageModelConfig {
   apiKey?: string;
-  organization?: string; // OpenAI only
-  baseUrl?: string; // Optional custom API endpoint
 }
 ```
 
