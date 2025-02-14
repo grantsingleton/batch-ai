@@ -1,4 +1,5 @@
 import { Anthropic } from '@anthropic-ai/sdk';
+import { MessageBatchIndividualResponse } from '@anthropic-ai/sdk/resources/messages/batches';
 import { z } from 'zod';
 import {
   BatchError,
@@ -136,19 +137,43 @@ export class AnthropicLanguageModel extends LanguageModel {
   ): Promise<BatchResponse<TOutput>[]> {
     try {
       const results = await this.client.messages.batches.results(batchId);
+      const responseArray: MessageBatchIndividualResponse[] = [];
 
-      return results.map((result) => {
+      for await (const result of results) {
+        responseArray.push(result);
+      }
+
+      return responseArray.map((result) => {
+        let output: TOutput | undefined = undefined;
+
+        if (result.result.type === 'succeeded') {
+          const toolUseBlock = result.result.message.content.find(
+            (block) =>
+              block.type === 'tool_use' && block.name === 'format_response'
+          );
+          if (toolUseBlock?.type === 'tool_use') {
+            output = JSON.parse(toolUseBlock.input as string) as TOutput;
+          }
+        }
+
         return {
           customId: result.custom_id,
-          output:
+          output,
+          usage:
             result.result.type === 'succeeded'
-              ? (result.result.message.content[0].text as TOutput)
+              ? {
+                  promptTokens: result.result.message.usage.input_tokens,
+                  completionTokens: result.result.message.usage.output_tokens,
+                  totalTokens:
+                    result.result.message.usage.input_tokens +
+                    result.result.message.usage.output_tokens,
+                }
               : undefined,
           error:
             result.result.type !== 'succeeded'
               ? {
                   code: result.result.type,
-                  message: result.result.error?.message || 'Request failed',
+                  message: 'Request failed',
                 }
               : undefined,
         };
