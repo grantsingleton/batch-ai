@@ -9,6 +9,8 @@ import {
 } from './types';
 import { OpenAILanguageModel } from './providers/openai';
 import { AnthropicLanguageModel } from './providers/anthropic';
+import { ChatModel as OpenAIModel } from 'openai/resources/chat/chat';
+import { Model as AnthropicModel } from '@anthropic-ai/sdk/resources/messages/messages';
 
 // Re-export types
 export {
@@ -26,7 +28,7 @@ export {
  * @param config Configuration options including API key
  */
 export function openai(
-  modelId: string,
+  modelId: OpenAIModel,
   config?: LanguageModelConfig
 ): LanguageModel {
   return new OpenAILanguageModel(modelId, config);
@@ -38,7 +40,7 @@ export function openai(
  * @param config Configuration options including API key
  */
 export function anthropic(
-  modelId: string,
+  modelId: AnthropicModel,
   config?: LanguageModelConfig
 ): LanguageModel {
   return new AnthropicLanguageModel(modelId, config);

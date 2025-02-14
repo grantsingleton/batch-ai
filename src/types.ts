@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { Model as AnthropicModel } from '@anthropic-ai/sdk/resources/messages/messages';
+import { ChatModel as OpenAIModel } from 'openai/resources/chat/chat';
 
 // Common types across providers
 export type BatchStatus =
@@ -55,7 +57,7 @@ export interface LanguageModelConfig {
 
 export abstract class LanguageModel {
   constructor(
-    public readonly modelId: string,
+    public readonly modelId: OpenAIModel | AnthropicModel,
     public readonly config?: LanguageModelConfig
   ) {}
 

@@ -13,12 +13,13 @@ import {
   BatchStatus,
 } from '../types';
 import { zodResponseFormat } from 'openai/helpers/zod';
+import { ChatModel } from 'openai/resources/chat/chat';
 
 export class OpenAILanguageModel extends LanguageModel {
   public readonly provider = 'openai' as const;
   private client: OpenAI;
 
-  constructor(modelId: string, config?: LanguageModelConfig) {
+  constructor(modelId: ChatModel, config?: LanguageModelConfig) {
     super(modelId, config);
     this.client = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY || config?.apiKey,

@@ -1,5 +1,6 @@
 import { Anthropic } from '@anthropic-ai/sdk';
 import { MessageBatchIndividualResponse } from '@anthropic-ai/sdk/resources/messages/batches';
+import { Model as AnthropicModel } from '@anthropic-ai/sdk/resources/messages/messages';
 import { z } from 'zod';
 import {
   BatchError,
@@ -10,12 +11,13 @@ import {
   LanguageModelConfig,
   BatchStatus,
 } from '../types';
+import { zodToJsonSchema } from 'zod-to-json-schema';
 
 export class AnthropicLanguageModel extends LanguageModel {
   public readonly provider = 'anthropic' as const;
   private client: Anthropic;
 
-  constructor(modelId: string, config?: LanguageModelConfig) {
+  constructor(modelId: AnthropicModel, config?: LanguageModelConfig) {
     super(modelId, config);
     this.client = new Anthropic({
       apiKey: process.env.ANTHROPIC_API_KEY || config?.apiKey,
@@ -28,27 +30,7 @@ export class AnthropicLanguageModel extends LanguageModel {
   ): Promise<string> {
     try {
       // Convert Zod schema to a JSON schema that matches Anthropic's types
-      const zodToJsonSchema = (schema: z.ZodSchema<any>) => {
-        if (schema instanceof z.ZodObject) {
-          const shape = schema.shape;
-          return {
-            type: 'object' as const,
-            properties: Object.fromEntries(
-              Object.entries(shape).map(([key, value]) => [
-                key,
-                {
-                  type:
-                    value instanceof z.ZodString
-                      ? ('string' as const)
-                      : ('any' as const),
-                },
-              ])
-            ),
-            required: Object.keys(shape),
-          };
-        }
-        return { type: 'object' as const, properties: {} };
-      };
+      const jsonSchema = zodToJsonSchema(outputSchema);
 
       const batch = await this.client.messages.batches.create({
         requests: requests.map((request) => ({
@@ -67,7 +49,12 @@ export class AnthropicLanguageModel extends LanguageModel {
                 name: 'format_response',
                 description:
                   'Format the response according to the required schema',
-                input_schema: zodToJsonSchema(outputSchema),
+                input_schema: {
+                  type: 'object' as const,
+                  properties: {
+                    response: jsonSchema,
+                  },
+                },
               },
             ],
             tool_choice: {
@@ -152,7 +139,7 @@ export class AnthropicLanguageModel extends LanguageModel {
               block.type === 'tool_use' && block.name === 'format_response'
           );
           if (toolUseBlock?.type === 'tool_use') {
-            output = JSON.parse(toolUseBlock.input as string) as TOutput;
+            output = (toolUseBlock.input as any).response as TOutput;
           }
         }
 
