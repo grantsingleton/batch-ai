@@ -22,7 +22,7 @@
   "scripts": {
     "build:cjs": "tsc -p tsconfig.cjs.json",
     "build:esm": "tsc",
-    "build": "npm run build:cjs && mv dist/index.js dist/index.cjs && npm run build:esm",
+    "build": "rm -rf dist && npm run build:cjs && mv dist/index.js dist/index.cjs && npm run build:esm",
     "watch": "tsc --watch",
     "test": "jest",
     "lint": "eslint .",
