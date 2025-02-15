@@ -1,6 +1,6 @@
 {
   "name": "batch-ai",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "A unified SDK for making batch AI requests across different model providers",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
