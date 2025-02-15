@@ -1,6 +1,6 @@
 {
   "name": "batch-ai",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "A unified SDK for making batch AI requests across different model providers",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -20,7 +20,9 @@
     "src/types.ts"
   ],
   "scripts": {
-    "build": "tsc && tsc -p tsconfig.cjs.json && node scripts/prepare-dist.js",
+    "build:cjs": "tsc -p tsconfig.cjs.json",
+    "build:esm": "tsc",
+    "build": "rm -rf dist && npm run build:cjs && mv dist/index.js dist/index.cjs && npm run build:esm",
     "watch": "tsc --watch",
     "test": "jest",
     "lint": "eslint .",
