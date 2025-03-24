@@ -1,8 +1,8 @@
-import { OpenAI } from 'openai';
-import { z } from 'zod';
-import fs from 'fs';
-import path from 'path';
-import os from 'os';
+import { OpenAI } from "openai";
+import { z } from "zod";
+import fs from "fs";
+import path from "path";
+import os from "os";
 import {
   BatchError,
   BatchRequest,
@@ -11,12 +11,12 @@ import {
   LanguageModel,
   LanguageModelConfig,
   BatchStatus,
-} from '../types';
-import { zodResponseFormat } from 'openai/helpers/zod';
-import { ChatModel } from 'openai/resources/chat/chat';
+} from "../types";
+import { zodResponseFormat } from "openai/helpers/zod";
+import { ChatModel } from "openai/resources/chat/chat";
 
 export class OpenAILanguageModel extends LanguageModel {
-  public readonly provider = 'openai' as const;
+  public readonly provider = "openai" as const;
   private client: OpenAI;
 
   constructor(modelId: ChatModel, config?: LanguageModelConfig) {
@@ -37,21 +37,29 @@ export class OpenAILanguageModel extends LanguageModel {
       .map((request) =>
         JSON.stringify({
           custom_id: request.customId,
-          method: 'POST',
-          url: '/v1/chat/completions',
+          method: "POST",
+          url: "/v1/chat/completions",
           body: {
             model: this.modelId,
             messages: [
+              ...(request.systemPrompt
+                ? [
+                    {
+                      role: "system",
+                      content: request.systemPrompt,
+                    },
+                  ]
+                : []),
               {
-                role: 'user',
+                role: "user",
                 content: request.input,
               },
             ],
-            response_format: zodResponseFormat(outputSchema, 'moderation'),
+            response_format: zodResponseFormat(outputSchema, "moderation"),
           },
         })
       )
-      .join('\n');
+      .join("\n");
 
     await fs.promises.writeFile(tempFile, jsonlContent);
     return tempFile;
@@ -68,14 +76,14 @@ export class OpenAILanguageModel extends LanguageModel {
       // Upload file
       const file = await this.client.files.create({
         file: fs.createReadStream(jsonlFile),
-        purpose: 'batch',
+        purpose: "batch",
       });
 
       // Create batch
       const batch = await this.client.batches.create({
         input_file_id: file.id,
-        endpoint: '/v1/chat/completions',
-        completion_window: '24h',
+        endpoint: "/v1/chat/completions",
+        completion_window: "24h",
       });
 
       // Cleanup temp file
@@ -84,8 +92,8 @@ export class OpenAILanguageModel extends LanguageModel {
       return batch.id;
     } catch (error) {
       throw new BatchError(
-        error instanceof Error ? error.message : 'Unknown error',
-        'batch_creation_failed'
+        error instanceof Error ? error.message : "Unknown error",
+        "batch_creation_failed"
       );
     }
   }
@@ -112,8 +120,8 @@ export class OpenAILanguageModel extends LanguageModel {
       };
     } catch (error) {
       throw new BatchError(
-        error instanceof Error ? error.message : 'Unknown error',
-        'batch_retrieval_failed',
+        error instanceof Error ? error.message : "Unknown error",
+        "batch_retrieval_failed",
         batchId
       );
     }
@@ -127,8 +135,8 @@ export class OpenAILanguageModel extends LanguageModel {
 
       if (!batch.output_file_id) {
         throw new BatchError(
-          'Batch results not yet available',
-          'results_not_ready',
+          "Batch results not yet available",
+          "results_not_ready",
           batchId
         );
       }
@@ -137,7 +145,7 @@ export class OpenAILanguageModel extends LanguageModel {
       const results = await fileContent.text();
 
       return results
-        .split('\n')
+        .split("\n")
         .filter((line) => line.trim())
         .map((line) => {
           const result = JSON.parse(line);
@@ -156,16 +164,16 @@ export class OpenAILanguageModel extends LanguageModel {
               : undefined,
             error: result.error
               ? {
-                  code: result.error.code || 'unknown_error',
-                  message: result.error.message || 'Unknown error occurred',
+                  code: result.error.code || "unknown_error",
+                  message: result.error.message || "Unknown error occurred",
                 }
               : undefined,
           };
         });
     } catch (error) {
       throw new BatchError(
-        error instanceof Error ? error.message : 'Unknown error',
-        'results_retrieval_failed',
+        error instanceof Error ? error.message : "Unknown error",
+        "results_retrieval_failed",
         batchId
       );
     }
@@ -176,8 +184,8 @@ export class OpenAILanguageModel extends LanguageModel {
       await this.client.batches.cancel(batchId);
     } catch (error) {
       throw new BatchError(
-        error instanceof Error ? error.message : 'Unknown error',
-        'batch_cancellation_failed',
+        error instanceof Error ? error.message : "Unknown error",
+        "batch_cancellation_failed",
         batchId
       );
     }
@@ -185,22 +193,22 @@ export class OpenAILanguageModel extends LanguageModel {
 
   private mapStatus(status: string): BatchStatus {
     switch (status) {
-      case 'validating':
-        return 'validating';
-      case 'in_progress':
-        return 'in_progress';
-      case 'completed':
-        return 'completed';
-      case 'failed':
-        return 'failed';
-      case 'expired':
-        return 'expired';
-      case 'cancelling':
-        return 'cancelling';
-      case 'cancelled':
-        return 'cancelled';
+      case "validating":
+        return "validating";
+      case "in_progress":
+        return "in_progress";
+      case "completed":
+        return "completed";
+      case "failed":
+        return "failed";
+      case "expired":
+        return "expired";
+      case "cancelling":
+        return "cancelling";
+      case "cancelled":
+        return "cancelled";
       default:
-        return 'failed';
+        return "failed";
     }
   }
 }

@@ -1,7 +1,7 @@
-import { Anthropic } from '@anthropic-ai/sdk';
-import { MessageBatchIndividualResponse } from '@anthropic-ai/sdk/resources/messages/batches';
-import { Model as AnthropicModel } from '@anthropic-ai/sdk/resources/messages/messages';
-import { z } from 'zod';
+import { Anthropic } from "@anthropic-ai/sdk";
+import { MessageBatchIndividualResponse } from "@anthropic-ai/sdk/resources/messages/batches";
+import { Model as AnthropicModel } from "@anthropic-ai/sdk/resources/messages/messages";
+import { z } from "zod";
 import {
   BatchError,
   BatchRequest,
@@ -10,11 +10,11 @@ import {
   LanguageModel,
   LanguageModelConfig,
   BatchStatus,
-} from '../types';
-import { zodToJsonSchema } from 'zod-to-json-schema';
+} from "../types";
+import { zodToJsonSchema } from "zod-to-json-schema";
 
 export class AnthropicLanguageModel extends LanguageModel {
-  public readonly provider = 'anthropic' as const;
+  public readonly provider = "anthropic" as const;
   private client: Anthropic;
 
   constructor(modelId: AnthropicModel, config?: LanguageModelConfig) {
@@ -40,17 +40,19 @@ export class AnthropicLanguageModel extends LanguageModel {
             max_tokens: 2048,
             messages: [
               {
-                role: 'user',
+                role: "user",
                 content: request.input,
               },
             ],
+            // Add system prompt if provided
+            ...(request.systemPrompt ? { system: request.systemPrompt } : {}),
             tools: [
               {
-                name: 'format_response',
+                name: "format_response",
                 description:
-                  'Format the response according to the required schema',
+                  "Format the response according to the required schema",
                 input_schema: {
-                  type: 'object' as const,
+                  type: "object" as const,
                   properties: {
                     response: jsonSchema,
                   },
@@ -58,8 +60,8 @@ export class AnthropicLanguageModel extends LanguageModel {
               },
             ],
             tool_choice: {
-              type: 'tool',
-              name: 'format_response',
+              type: "tool",
+              name: "format_response",
               disable_parallel_tool_use: true,
             },
           },
@@ -69,8 +71,8 @@ export class AnthropicLanguageModel extends LanguageModel {
       return batch.id;
     } catch (error) {
       throw new BatchError(
-        error instanceof Error ? error.message : 'Unknown error',
-        'batch_creation_failed'
+        error instanceof Error ? error.message : "Unknown error",
+        "batch_creation_failed"
       );
     }
   }
@@ -96,8 +98,8 @@ export class AnthropicLanguageModel extends LanguageModel {
       };
     } catch (error) {
       throw new BatchError(
-        error instanceof Error ? error.message : 'Unknown error',
-        'batch_retrieval_failed',
+        error instanceof Error ? error.message : "Unknown error",
+        "batch_retrieval_failed",
         batchId
       );
     }
@@ -125,10 +127,10 @@ export class AnthropicLanguageModel extends LanguageModel {
     try {
       const batch = await this.client.messages.batches.retrieve(batchId);
 
-      if (batch.processing_status !== 'ended') {
+      if (batch.processing_status !== "ended") {
         throw new BatchError(
-          'Batch results not yet available',
-          'results_not_ready',
+          "Batch results not yet available",
+          "results_not_ready",
           batchId
         );
       }
@@ -143,12 +145,12 @@ export class AnthropicLanguageModel extends LanguageModel {
       return responseArray.map((result) => {
         let output: TOutput | undefined = undefined;
 
-        if (result.result.type === 'succeeded') {
+        if (result.result.type === "succeeded") {
           const toolUseBlock = result.result.message.content.find(
             (block) =>
-              block.type === 'tool_use' && block.name === 'format_response'
+              block.type === "tool_use" && block.name === "format_response"
           );
-          if (toolUseBlock?.type === 'tool_use') {
+          if (toolUseBlock?.type === "tool_use") {
             output = (toolUseBlock.input as any).response as TOutput;
           }
         }
@@ -157,7 +159,7 @@ export class AnthropicLanguageModel extends LanguageModel {
           customId: result.custom_id,
           output,
           usage:
-            result.result.type === 'succeeded'
+            result.result.type === "succeeded"
               ? {
                   promptTokens: result.result.message.usage.input_tokens,
                   completionTokens: result.result.message.usage.output_tokens,
@@ -167,18 +169,18 @@ export class AnthropicLanguageModel extends LanguageModel {
                 }
               : undefined,
           error:
-            result.result.type !== 'succeeded'
+            result.result.type !== "succeeded"
               ? {
                   code: result.result.type,
-                  message: 'Request failed',
+                  message: "Request failed",
                 }
               : undefined,
         };
       });
     } catch (error) {
       throw new BatchError(
-        error instanceof Error ? error.message : 'Unknown error',
-        'results_retrieval_failed',
+        error instanceof Error ? error.message : "Unknown error",
+        "results_retrieval_failed",
         batchId
       );
     }
@@ -189,8 +191,8 @@ export class AnthropicLanguageModel extends LanguageModel {
       await this.client.messages.batches.cancel(batchId);
     } catch (error) {
       throw new BatchError(
-        error instanceof Error ? error.message : 'Unknown error',
-        'batch_cancellation_failed',
+        error instanceof Error ? error.message : "Unknown error",
+        "batch_cancellation_failed",
         batchId
       );
     }
@@ -198,14 +200,14 @@ export class AnthropicLanguageModel extends LanguageModel {
 
   private mapStatus(status: string): BatchStatus {
     switch (status) {
-      case 'in_progress':
-        return 'in_progress';
-      case 'ended':
-        return 'completed';
-      case 'canceling':
-        return 'cancelling';
+      case "in_progress":
+        return "in_progress";
+      case "ended":
+        return "completed";
+      case "canceling":
+        return "cancelling";
       default:
-        return 'failed';
+        return "failed";
     }
   }
 }

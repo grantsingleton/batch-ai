@@ -27,6 +27,25 @@ Inspired by the [Vercel AI SDK](https://sdk.vercel.ai/docs), this library aims t
 - ⚡ **Performance**: Process thousands of prompts efficiently
 - 🔍 **Error Handling**: Robust error handling with detailed error types
 
+## System Prompts
+
+batch-ai supports system prompts for both OpenAI and Anthropic models. System prompts help you guide the model's behavior without taking up space in your input text.
+
+To use system prompts, simply add the optional `systemPrompt` property to your requests:
+
+```typescript
+const requests = [
+  {
+    customId: "task-1",
+    input: "What is the capital of France?",
+    systemPrompt:
+      "You are a helpful geography expert. Provide concise answers.",
+  },
+];
+```
+
+System prompts are completely optional and can be omitted if not needed.
+
 ## Installation
 
 ```bash
@@ -54,42 +73,46 @@ ANTHROPIC_API_KEY=sk-...
 2. Explicit Configuration:
 
 ```typescript
-const model = openai('gpt-4o', {
-  apiKey: 'sk-...', // Your OpenAI API key
+const model = openai("gpt-4o", {
+  apiKey: "sk-...", // Your OpenAI API key
 });
 
 // or
-const model = anthropic('claude-3-5-sonnet-20241022', {
-  apiKey: 'sk-...', // Your Anthropic API key
+const model = anthropic("claude-3-5-sonnet-20241022", {
+  apiKey: "sk-...", // Your Anthropic API key
 });
 ```
 
 ### Basic Usage
 
 ```typescript
-import { z } from 'zod';
-import { openai, createObjectBatch, getObjectBatch } from 'batch-ai';
+import { z } from "zod";
+import { openai, createObjectBatch, getObjectBatch } from "batch-ai";
 
 // Define your output schema using Zod
 const responseSchema = z.object({
-  sentiment: z.enum(['positive', 'negative', 'neutral']),
+  sentiment: z.enum(["positive", "negative", "neutral"]),
   confidence: z.number().min(0).max(1),
 });
 
 // Initialize the model
-const model = openai('gpt-4o', {
+const model = openai("gpt-4o", {
   apiKey: process.env.OPENAI_API_KEY, // Optional if set in environment
 });
 
 // Prepare your batch requests
 const requests = [
   {
-    customId: 'review-1',
-    input: 'I absolutely love this product! Best purchase ever.',
+    customId: "review-1",
+    input: "I absolutely love this product! Best purchase ever.",
+    systemPrompt:
+      "You are a sentiment analysis assistant. Analyze the sentiment of the review provided.",
   },
   {
-    customId: 'review-2',
-    input: 'This is terrible, would not recommend.',
+    customId: "review-2",
+    input: "This is terrible, would not recommend.",
+    systemPrompt:
+      "You are a sentiment analysis assistant. Analyze the sentiment of the review provided.",
   },
 ];
 
@@ -107,8 +130,8 @@ const { batch, results } = await getObjectBatch({
 });
 
 // Check batch status
-if (batch.status === 'completed' && results) {
-  console.log('Results:', results);
+if (batch.status === "completed" && results) {
+  console.log("Results:", results);
   // [
   //   {
   //     customId: 'review-1',
@@ -127,9 +150,9 @@ if (batch.status === 'completed' && results) {
 ### OpenAI
 
 ```typescript
-import { openai } from 'batch-ai';
+import { openai } from "batch-ai";
 
-const model = openai('gpt-4o', {
+const model = openai("gpt-4o", {
   apiKey: process.env.OPENAI_API_KEY,
 });
 ```
@@ -137,9 +160,9 @@ const model = openai('gpt-4o', {
 ### Anthropic
 
 ```typescript
-import { anthropic } from 'batch-ai';
+import { anthropic } from "batch-ai";
 
-const model = anthropic('claude-3-5-sonnet-20241022', {
+const model = anthropic("claude-3-5-sonnet-20241022", {
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 ```
@@ -203,13 +226,13 @@ interface {
 
 ```typescript
 type BatchStatus =
-  | 'validating'
-  | 'in_progress'
-  | 'completed'
-  | 'failed'
-  | 'expired'
-  | 'cancelling'
-  | 'cancelled';
+  | "validating"
+  | "in_progress"
+  | "completed"
+  | "failed"
+  | "expired"
+  | "cancelling"
+  | "cancelled";
 ```
 
 #### `BatchResponse<T>`

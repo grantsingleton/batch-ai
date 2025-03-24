@@ -1,16 +1,16 @@
-import { z } from 'zod';
-import { Model as AnthropicModel } from '@anthropic-ai/sdk/resources/messages/messages';
-import { ChatModel as OpenAIModel } from 'openai/resources/chat/chat';
+import { z } from "zod";
+import { Model as AnthropicModel } from "@anthropic-ai/sdk/resources/messages/messages";
+import { ChatModel as OpenAIModel } from "openai/resources/chat/chat";
 
 // Common types across providers
 export type BatchStatus =
-  | 'validating'
-  | 'in_progress'
-  | 'completed'
-  | 'failed'
-  | 'expired'
-  | 'cancelling'
-  | 'cancelled';
+  | "validating"
+  | "in_progress"
+  | "completed"
+  | "failed"
+  | "expired"
+  | "cancelling"
+  | "cancelled";
 
 export interface BatchRequestCounts {
   total: number;
@@ -25,6 +25,7 @@ export interface BatchRequestCounts {
 export interface BatchRequest<T> {
   customId: string;
   input: T;
+  systemPrompt?: string;
 }
 
 export interface BatchResponse<T> {
@@ -61,7 +62,7 @@ export abstract class LanguageModel {
     public readonly config?: LanguageModelConfig
   ) {}
 
-  abstract readonly provider: 'openai' | 'anthropic';
+  abstract readonly provider: "openai" | "anthropic";
 
   // Core methods that each provider must implement
   abstract createBatch(
@@ -82,6 +83,6 @@ export abstract class LanguageModel {
 export class BatchError extends Error {
   constructor(message: string, public code: string, public batchId?: string) {
     super(message);
-    this.name = 'BatchError';
+    this.name = "BatchError";
   }
 }
