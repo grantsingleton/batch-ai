@@ -10,6 +10,7 @@ import { OpenAILanguageModel } from './providers/openai';
 import { AnthropicLanguageModel } from './providers/anthropic';
 import { ChatModel as OpenAIModel } from 'openai/resources/chat/chat';
 import { Model as AnthropicModel } from '@anthropic-ai/sdk/resources/messages/messages';
+import { ChatCompletionContentPart } from 'openai/resources';
 
 // Re-export types
 export {
@@ -29,7 +30,7 @@ export {
 export function openai(
   modelId: OpenAIModel,
   config?: LanguageModelConfig
-): LanguageModel {
+): LanguageModel<Array<ChatCompletionContentPart>> {
   return new OpenAILanguageModel(modelId, config);
 }
 
@@ -41,13 +42,13 @@ export function openai(
 export function anthropic(
   modelId: AnthropicModel,
   config?: LanguageModelConfig
-): LanguageModel {
+): LanguageModel<string> {
   return new AnthropicLanguageModel(modelId, config);
 }
 
-export interface CreateObjectBatchParams {
-  model: LanguageModel;
-  requests: BatchRequest<string>[];
+export interface CreateObjectBatchParams<Input> {
+  model: LanguageModel<Input>;
+  requests: BatchRequest<Input>[];
   outputSchema: any;
 }
 
@@ -60,17 +61,17 @@ export interface CreateObjectBatchResponse {
  * @param params Object containing the model, prompts, and output schema
  * @returns Promise resolving to the batch ID
  */
-export async function createObjectBatch({
+export async function createObjectBatch<Input>({
   model,
   requests,
   outputSchema,
-}: CreateObjectBatchParams): Promise<CreateObjectBatchResponse> {
+}: CreateObjectBatchParams<Input>): Promise<CreateObjectBatchResponse> {
   const batchId = await model.createBatch(requests, outputSchema);
   return { batchId };
 }
 
-export interface GetObjectBatchParams {
-  model: LanguageModel;
+export interface GetObjectBatchParams<Input> {
+  model: LanguageModel<Input>;
   batchId: string;
 }
 
@@ -79,10 +80,10 @@ export interface GetObjectBatchParams {
  * @param params Object containing the model and batch ID
  * @returns Promise resolving to the batch status and results
  */
-export async function getObjectBatch<TOutput>({
+export async function getObjectBatch<TInput, TOutput>({
   model,
   batchId,
-}: GetObjectBatchParams): Promise<{
+}: GetObjectBatchParams<TInput>): Promise<{
   batch: Batch;
   results?: BatchResponse<TOutput>[];
 }> {

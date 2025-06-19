@@ -100,17 +100,31 @@ const model = openai("gpt-4o", {
   apiKey: process.env.OPENAI_API_KEY, // Optional if set in environment
 });
 
-// Prepare your batch requests
+// Prepare your batch requests, input can include text and images
+// refer to https://platform.openai.com/docs/api-reference/chat/create
 const requests = [
   {
     customId: "review-1",
-    input: "I absolutely love this product! Best purchase ever.",
+    input: [
+      {
+        type: "text",
+        text: "I absolutely love this product! Best purchase ever.",
+      },
+    ],
     systemPrompt:
       "You are a sentiment analysis assistant. Analyze the sentiment of the review provided.",
   },
   {
     customId: "review-2",
-    input: "This is terrible, would not recommend.",
+    input: [
+      { type: "text", text: "This is terrible, would not recommend." },
+      {
+        type: "image_url",
+        image_url: {
+          url: "https://test-image.jpg",
+        },
+      },
+    ],
     systemPrompt:
       "You are a sentiment analysis assistant. Analyze the sentiment of the review provided.",
   },

@@ -6,6 +6,7 @@ import {
   getObjectBatch,
   BatchError,
 } from '../index';
+import { ChatCompletionContentPart } from 'openai/resources/index';
 
 // Mock the provider implementations
 jest.mock('../providers/openai', () => ({
@@ -39,10 +40,10 @@ describe('SDK Functions', () => {
       confidence: z.number(),
     });
 
-    const prompts = [
-      'I love this product!',
-      'This is terrible.',
-      "It's okay I guess.",
+    const openAIprompts: ChatCompletionContentPart[][] = [
+      [{ type: 'text', text: 'I love this product!' }],
+      [{ type: 'text', text: 'This is terrible.' }],
+      [{ type: 'text', text: "It's okay I guess." }],
     ];
 
     it('should create a batch with OpenAI provider', async () => {
@@ -51,7 +52,7 @@ describe('SDK Functions', () => {
 
       const batchId = await createObjectBatch({
         model,
-        requests: prompts.map((prompt, index) => ({
+        requests: openAIprompts.map((prompt, index) => ({
           customId: `request-${index}`,
           input: prompt,
         })),
@@ -63,12 +64,18 @@ describe('SDK Functions', () => {
         expect.arrayContaining([
           expect.objectContaining({
             customId: expect.any(String),
-            input: 'I love this product!',
+            input: [{ text: 'I love this product!', type: 'text' }],
           }),
         ]),
         testSchema
       );
     });
+
+    const anthropicPrompts = [
+      'I love this product!',
+      'This is terrible.',
+      "It's okay I guess.",
+    ];
 
     it('should create a batch with Anthropic provider', async () => {
       const model = anthropic('claude-3-opus-20240229', { apiKey: 'test-key' });
@@ -76,7 +83,7 @@ describe('SDK Functions', () => {
 
       const batchId = await createObjectBatch({
         model,
-        requests: prompts.map((prompt, index) => ({
+        requests: anthropicPrompts.map((prompt, index) => ({
           customId: `request-${index}`,
           input: prompt,
         })),
@@ -104,7 +111,7 @@ describe('SDK Functions', () => {
       await expect(
         createObjectBatch({
           model,
-          requests: prompts.map((prompt, index) => ({
+          requests: openAIprompts.map((prompt, index) => ({
             customId: `request-${index}`,
             input: prompt,
           })),

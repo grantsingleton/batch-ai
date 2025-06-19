@@ -14,8 +14,11 @@ import {
 } from "../types";
 import { zodResponseFormat } from "openai/helpers/zod";
 import { ChatModel } from "openai/resources/chat/chat";
+import { ChatCompletionContentPart } from "openai/resources";
 
-export class OpenAILanguageModel extends LanguageModel {
+export class OpenAILanguageModel extends LanguageModel<
+  Array<ChatCompletionContentPart>
+> {
   public readonly provider = "openai" as const;
   private client: OpenAI;
 
@@ -27,7 +30,7 @@ export class OpenAILanguageModel extends LanguageModel {
   }
 
   private async createJsonlFile(
-    requests: BatchRequest<string>[],
+    requests: BatchRequest<Array<ChatCompletionContentPart>>[],
     outputSchema: z.ZodSchema<any>
   ): Promise<string> {
     const tempDir = os.tmpdir();
@@ -66,7 +69,7 @@ export class OpenAILanguageModel extends LanguageModel {
   }
 
   async createBatch(
-    requests: BatchRequest<string>[],
+    requests: BatchRequest<Array<ChatCompletionContentPart>>[],
     outputSchema: z.ZodSchema<unknown>
   ): Promise<string> {
     try {

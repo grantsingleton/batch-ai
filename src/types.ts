@@ -56,7 +56,7 @@ export interface LanguageModelConfig {
   apiKey?: string;
 }
 
-export abstract class LanguageModel {
+export abstract class LanguageModel<Input> {
   constructor(
     public readonly modelId: OpenAIModel | AnthropicModel,
     public readonly config?: LanguageModelConfig
@@ -66,7 +66,7 @@ export abstract class LanguageModel {
 
   // Core methods that each provider must implement
   abstract createBatch(
-    requests: BatchRequest<string>[],
+    requests: BatchRequest<Input>[],
     outputSchema: z.ZodSchema<unknown>
   ): Promise<string>;
 

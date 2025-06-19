@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { OpenAILanguageModel } from "../providers/openai";
-import { BatchError } from "../types";
+import { BatchError, BatchRequest } from "../types";
+import { ChatCompletionContentPart } from "openai/resources/index";
 
 // Mock the OpenAI client
 const mockCreate = jest.fn();
@@ -88,9 +89,23 @@ describe("OpenAILanguageModel", () => {
       response: z.string(),
     });
 
-    const testRequests = [
-      { customId: "test-1", input: "Hello world" },
-      { customId: "test-2", input: "How are you?" },
+    const testRequests: BatchRequest<ChatCompletionContentPart[]>[] = [
+      {
+        customId: "test-1",
+        input: [
+          { type: "text" as const, text: "Hello world" },
+          {
+            type: "image_url" as const,
+            image_url: {
+              url: "test_url", // Use the resolved CDN URL
+            },
+          },
+        ],
+      },
+      {
+        customId: "test-2",
+        input: [{ type: "text" as const, text: "How are you?" }],
+      },
     ];
 
     it("should successfully create a batch", async () => {
@@ -135,10 +150,10 @@ describe("OpenAILanguageModel", () => {
 
     it("should include system prompt in messages when provided", async () => {
       const schema = z.object({ test: z.string() });
-      const requests = [
+      const requests: BatchRequest<ChatCompletionContentPart[]>[] = [
         {
           customId: "test-1",
-          input: "Hello",
+          input: [{ type: "text", text: "Hello" }],
           systemPrompt: "You are a helpful assistant",
         },
       ];
@@ -153,7 +168,7 @@ describe("OpenAILanguageModel", () => {
       const writeFileMock = require("fs").promises.writeFile;
       const jsonlContent = writeFileMock.mock.calls[0][1];
 
-      // Check that the JSON contains the system prompt
+      // Check that the JSON contains the system prompt and correct user content
       const parsed = JSON.parse(jsonlContent);
       expect(parsed.body.messages).toEqual([
         {
@@ -162,17 +177,17 @@ describe("OpenAILanguageModel", () => {
         },
         {
           role: "user",
-          content: "Hello",
+          content: [{ type: "text", text: "Hello" }],
         },
       ]);
     });
 
     it("should not include system message when systemPrompt is not provided", async () => {
       const schema = z.object({ test: z.string() });
-      const requests = [
+      const requests: BatchRequest<ChatCompletionContentPart[]>[] = [
         {
           customId: "test-1",
-          input: "Hello",
+          input: [{ type: "text", text: "Hello" }],
           // No systemPrompt here
         },
       ];
@@ -192,7 +207,7 @@ describe("OpenAILanguageModel", () => {
       expect(parsed.body.messages).toEqual([
         {
           role: "user",
-          content: "Hello",
+          content: [{ type: "text", text: "Hello" }],
         },
       ]);
     });

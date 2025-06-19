@@ -13,7 +13,7 @@ import {
 } from "../types";
 import { zodToJsonSchema } from "zod-to-json-schema";
 
-export class AnthropicLanguageModel extends LanguageModel {
+export class AnthropicLanguageModel extends LanguageModel<string> {
   public readonly provider = "anthropic" as const;
   private client: Anthropic;
 
