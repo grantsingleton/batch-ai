@@ -1,53 +1,54 @@
-import { z } from 'zod';
+import { z } from "zod";
 import {
   openai,
   anthropic,
   createObjectBatch,
   getObjectBatch,
   BatchError,
-} from '../index';
+  ContentPart,
+} from "../index";
 
 // Mock the provider implementations
-jest.mock('../providers/openai', () => ({
+jest.mock("../providers/openai", () => ({
   OpenAILanguageModel: jest.fn().mockImplementation(() => ({
-    provider: 'openai',
-    modelId: 'gpt-4',
+    provider: "openai",
+    modelId: "gpt-4",
     createBatch: jest.fn(),
     getBatch: jest.fn(),
     getBatchResults: jest.fn(),
   })),
 }));
 
-jest.mock('../providers/anthropic', () => ({
+jest.mock("../providers/anthropic", () => ({
   AnthropicLanguageModel: jest.fn().mockImplementation(() => ({
-    provider: 'anthropic',
-    modelId: 'claude-3-opus-20240229',
+    provider: "anthropic",
+    modelId: "claude-3-opus-20240229",
     createBatch: jest.fn(),
     getBatch: jest.fn(),
     getBatchResults: jest.fn(),
   })),
 }));
 
-describe('SDK Functions', () => {
+describe("SDK Functions", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  describe('createObjectBatch', () => {
+  describe("createObjectBatch and getObjectBatch", () => {
     const testSchema = z.object({
-      sentiment: z.enum(['positive', 'negative', 'neutral']),
+      sentiment: z.string(),
       confidence: z.number(),
     });
 
-    const prompts = [
-      'I love this product!',
-      'This is terrible.',
-      "It's okay I guess.",
+    const prompts: ContentPart[][] = [
+      [{ type: "text", text: "I love this product!" }],
+      [{ type: "text", text: "This is terrible." }],
+      [{ type: "text", text: "It's okay I guess." }],
     ];
 
-    it('should create a batch with OpenAI provider', async () => {
-      const model = openai('gpt-4', { apiKey: 'test-key' });
-      (model.createBatch as jest.Mock).mockResolvedValue('batch-123');
+    it("should create a batch with OpenAI provider", async () => {
+      const model = openai("gpt-4", { apiKey: "test-key" });
+      (model.createBatch as jest.Mock).mockResolvedValue("batch_abc123");
 
       const batchId = await createObjectBatch({
         model,
@@ -58,21 +59,21 @@ describe('SDK Functions', () => {
         outputSchema: testSchema,
       });
 
-      expect(batchId.batchId).toBe('batch-123');
+      expect(batchId).toEqual({ batchId: "batch_abc123" });
       expect(model.createBatch).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.objectContaining({
             customId: expect.any(String),
-            input: 'I love this product!',
+            input: [{ text: "I love this product!", type: "text" }],
           }),
         ]),
         testSchema
       );
     });
 
-    it('should create a batch with Anthropic provider', async () => {
-      const model = anthropic('claude-3-opus-20240229', { apiKey: 'test-key' });
-      (model.createBatch as jest.Mock).mockResolvedValue('batch_abc123');
+    it("should create a batch with Anthropic provider", async () => {
+      const model = anthropic("claude-3-opus-20240229", { apiKey: "test-key" });
+      (model.createBatch as jest.Mock).mockResolvedValue("batch_abc123");
 
       const batchId = await createObjectBatch({
         model,
@@ -83,22 +84,22 @@ describe('SDK Functions', () => {
         outputSchema: testSchema,
       });
 
-      expect(batchId.batchId).toBe('batch_abc123');
+      expect(batchId).toEqual({ batchId: "batch_abc123" });
       expect(model.createBatch).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.objectContaining({
             customId: expect.any(String),
-            input: 'I love this product!',
+            input: [{ text: "I love this product!", type: "text" }],
           }),
         ]),
         testSchema
       );
     });
 
-    it('should handle provider errors', async () => {
-      const model = openai('gpt-4', { apiKey: 'test-key' });
+    it("should handle batch creation errors", async () => {
+      const model = openai("gpt-4", { apiKey: "test-key" });
       (model.createBatch as jest.Mock).mockRejectedValue(
-        new BatchError('API error', 'batch_creation_failed')
+        new BatchError("API error", "api_error")
       );
 
       await expect(
@@ -112,14 +113,12 @@ describe('SDK Functions', () => {
         })
       ).rejects.toThrow(BatchError);
     });
-  });
 
-  describe('getObjectBatch', () => {
-    it('should get batch status and results when completed', async () => {
-      const model = openai('gpt-4', { apiKey: 'test-key' });
+    it("should get batch status and results when completed", async () => {
+      const model = openai("gpt-4", { apiKey: "test-key" });
       (model.getBatch as jest.Mock).mockResolvedValue({
-        id: 'batch-123',
-        status: 'completed',
+        id: "batch-123",
+        status: "completed",
         requestCounts: {
           total: 3,
           completed: 3,
@@ -129,37 +128,37 @@ describe('SDK Functions', () => {
       });
       (model.getBatchResults as jest.Mock).mockResolvedValue([
         {
-          customId: 'request-0',
-          output: { sentiment: 'positive', confidence: 0.9 },
+          customId: "request-0",
+          output: { sentiment: "positive", confidence: 0.9 },
         },
         {
-          customId: 'request-1',
-          output: { sentiment: 'negative', confidence: 0.8 },
+          customId: "request-1",
+          output: { sentiment: "negative", confidence: 0.8 },
         },
         {
-          customId: 'request-2',
-          output: { sentiment: 'neutral', confidence: 0.6 },
+          customId: "request-2",
+          output: { sentiment: "neutral", confidence: 0.6 },
         },
       ]);
 
       const result = await getObjectBatch({
         model,
-        batchId: 'batch-123',
+        batchId: "batch-123",
       });
 
-      expect(result.batch.status).toBe('completed');
+      expect(result.batch.status).toBe("completed");
       expect(result.results).toHaveLength(3);
       expect(result.results![0].output).toEqual({
-        sentiment: 'positive',
+        sentiment: "positive",
         confidence: 0.9,
       });
     });
 
-    it('should only return batch status when not completed', async () => {
-      const model = openai('gpt-4', { apiKey: 'test-key' });
+    it("should only return batch status when not completed", async () => {
+      const model = openai("gpt-4", { apiKey: "test-key" });
       (model.getBatch as jest.Mock).mockResolvedValue({
-        id: 'batch-123',
-        status: 'in_progress',
+        id: "batch-123",
+        status: "in_progress",
         requestCounts: {
           total: 3,
           completed: 1,
@@ -170,24 +169,24 @@ describe('SDK Functions', () => {
 
       const result = await getObjectBatch({
         model,
-        batchId: 'batch-123',
+        batchId: "batch-123",
       });
 
-      expect(result.batch.status).toBe('in_progress');
+      expect(result.batch.status).toBe("in_progress");
       expect(result.results).toBeUndefined();
       expect(model.getBatchResults).not.toHaveBeenCalled();
     });
 
-    it('should handle provider errors', async () => {
-      const model = openai('gpt-4', { apiKey: 'test-key' });
+    it("should handle provider errors", async () => {
+      const model = openai("gpt-4", { apiKey: "test-key" });
       (model.getBatch as jest.Mock).mockRejectedValue(
-        new BatchError('API error', 'batch_retrieval_failed', 'batch-123')
+        new BatchError("API error", "batch_retrieval_failed", "batch-123")
       );
 
       await expect(
         getObjectBatch({
           model,
-          batchId: 'batch-123',
+          batchId: "batch-123",
         })
       ).rejects.toThrow(BatchError);
     });

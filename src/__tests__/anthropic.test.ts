@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { AnthropicLanguageModel } from "../providers/anthropic";
-import { BatchError } from "../types";
+import { BatchError, BatchRequest, ContentPart } from "../types";
 
 // Mock the Anthropic client
 const mockCreate = jest.fn();
@@ -116,9 +116,23 @@ describe("AnthropicLanguageModel", () => {
       response: z.string(),
     });
 
-    const testRequests = [
-      { customId: "test-1", input: "Hello world" },
-      { customId: "test-2", input: "How are you?" },
+    const testRequests: BatchRequest<ContentPart[]>[] = [
+      {
+        customId: "test-1",
+        input: [{ type: "text" as const, text: "Hello world" }],
+      },
+      {
+        customId: "test-2",
+        input: [
+          { type: "text" as const, text: "How are you?" },
+          {
+            type: "image_url" as const,
+            image_url: {
+              url: "https://example.com/image.jpg",
+            },
+          },
+        ],
+      },
     ];
 
     it("should successfully create a batch", async () => {
@@ -143,7 +157,17 @@ describe("AnthropicLanguageModel", () => {
             custom_id: "test-1",
             params: expect.objectContaining({
               model: "claude-3-opus-20240229",
-              messages: [{ role: "user", content: "Hello world" }],
+              messages: [
+                {
+                  role: "user",
+                  content: [
+                    {
+                      type: "text",
+                      text: "Hello world",
+                    },
+                  ],
+                },
+              ],
             }),
           }),
         ]),
@@ -167,10 +191,10 @@ describe("AnthropicLanguageModel", () => {
 
     it("should include system prompt when provided", async () => {
       const schema = z.object({ test: z.string() });
-      const requests = [
+      const requests: BatchRequest<ContentPart[]>[] = [
         {
           customId: "test-1",
-          input: "Hello",
+          input: [{ type: "text", text: "Hello" }],
           systemPrompt: "You are a helpful assistant",
         },
       ];
@@ -185,14 +209,17 @@ describe("AnthropicLanguageModel", () => {
       expect(createParams.requests[0].params.system).toBe(
         "You are a helpful assistant"
       );
+      expect(createParams.requests[0].params.messages[0].content).toEqual([
+        { type: "text", text: "Hello" },
+      ]);
     });
 
     it("should not include system field when systemPrompt is not provided", async () => {
       const schema = z.object({ test: z.string() });
-      const requests = [
+      const requests: BatchRequest<ContentPart[]>[] = [
         {
           customId: "test-1",
-          input: "Hello",
+          input: [{ type: "text", text: "Hello" }],
           // No systemPrompt here
         },
       ];
@@ -205,6 +232,9 @@ describe("AnthropicLanguageModel", () => {
       // Check that no system field was included in the request
       const createParams = mockCreate.mock.calls[0][0];
       expect(createParams.requests[0].params.system).toBeUndefined();
+      expect(createParams.requests[0].params.messages[0].content).toEqual([
+        { type: "text", text: "Hello" },
+      ]);
     });
   });
 
