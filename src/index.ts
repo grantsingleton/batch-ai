@@ -5,12 +5,12 @@ import {
   BatchResponse,
   Batch,
   BatchError,
-} from './types';
-import { OpenAILanguageModel } from './providers/openai';
-import { AnthropicLanguageModel } from './providers/anthropic';
-import { ChatModel as OpenAIModel } from 'openai/resources/chat/chat';
-import { Model as AnthropicModel } from '@anthropic-ai/sdk/resources/messages/messages';
-import { ChatCompletionContentPart } from 'openai/resources';
+  ContentPart,
+} from "./types";
+import { OpenAILanguageModel } from "./providers/openai";
+import { AnthropicLanguageModel } from "./providers/anthropic";
+import { ChatModel as OpenAIModel } from "openai/resources/chat/chat";
+import { Model as AnthropicModel } from "@anthropic-ai/sdk/resources/messages/messages";
 
 // Re-export types
 export {
@@ -20,6 +20,7 @@ export {
   BatchResponse,
   Batch,
   BatchError,
+  ContentPart,
 };
 
 /**
@@ -30,7 +31,7 @@ export {
 export function openai(
   modelId: OpenAIModel,
   config?: LanguageModelConfig
-): LanguageModel<Array<ChatCompletionContentPart>> {
+): LanguageModel<Array<ContentPart>> {
   return new OpenAILanguageModel(modelId, config);
 }
 
@@ -42,7 +43,7 @@ export function openai(
 export function anthropic(
   modelId: AnthropicModel,
   config?: LanguageModelConfig
-): LanguageModel<string> {
+): LanguageModel<Array<ContentPart>> {
   return new AnthropicLanguageModel(modelId, config);
 }
 
@@ -89,7 +90,7 @@ export async function getObjectBatch<TInput, TOutput>({
 }> {
   const batch = await model.getBatch(batchId);
 
-  if (batch.status === 'completed') {
+  if (batch.status === "completed") {
     const results = await model.getBatchResults<TOutput>(batchId);
     return { batch, results };
   }

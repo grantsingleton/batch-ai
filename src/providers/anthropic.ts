@@ -10,10 +10,11 @@ import {
   LanguageModel,
   LanguageModelConfig,
   BatchStatus,
+  ContentPart,
 } from "../types";
 import { zodToJsonSchema } from "zod-to-json-schema";
 
-export class AnthropicLanguageModel extends LanguageModel<string> {
+export class AnthropicLanguageModel extends LanguageModel<Array<ContentPart>> {
   public readonly provider = "anthropic" as const;
   private client: Anthropic;
 
@@ -24,8 +25,30 @@ export class AnthropicLanguageModel extends LanguageModel<string> {
     });
   }
 
+  private convertContentParts(parts: ContentPart[]): any[] {
+    return parts.map((part) => {
+      if (part.type === "text") {
+        return {
+          type: "text",
+          text: part.text || "",
+        };
+      } else if (part.type === "image_url" && part.image_url) {
+        // Anthropic expects images as base64 or with media type
+        // For now, we'll pass the URL and let Anthropic handle it
+        return {
+          type: "image",
+          source: {
+            type: "url",
+            url: part.image_url.url,
+          },
+        };
+      }
+      throw new Error(`Unsupported content part type: ${part.type}`);
+    });
+  }
+
   async createBatch(
-    requests: BatchRequest<string>[],
+    requests: BatchRequest<Array<ContentPart>>[],
     outputSchema: z.ZodSchema<any>
   ): Promise<string> {
     try {
@@ -41,7 +64,7 @@ export class AnthropicLanguageModel extends LanguageModel<string> {
             messages: [
               {
                 role: "user",
-                content: request.input,
+                content: this.convertContentParts(request.input),
               },
             ],
             // Add system prompt if provided

@@ -1,8 +1,8 @@
 import { OpenAI } from "openai";
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
 import { z } from "zod";
-import fs from "fs";
-import path from "path";
-import os from "os";
 import {
   BatchError,
   BatchRequest,
@@ -11,14 +11,12 @@ import {
   LanguageModel,
   LanguageModelConfig,
   BatchStatus,
+  ContentPart,
 } from "../types";
 import { zodResponseFormat } from "openai/helpers/zod";
 import { ChatModel } from "openai/resources/chat/chat";
-import { ChatCompletionContentPart } from "openai/resources";
 
-export class OpenAILanguageModel extends LanguageModel<
-  Array<ChatCompletionContentPart>
-> {
+export class OpenAILanguageModel extends LanguageModel<Array<ContentPart>> {
   public readonly provider = "openai" as const;
   private client: OpenAI;
 
@@ -30,38 +28,33 @@ export class OpenAILanguageModel extends LanguageModel<
   }
 
   private async createJsonlFile(
-    requests: BatchRequest<Array<ChatCompletionContentPart>>[],
+    requests: BatchRequest<Array<ContentPart>>[],
     outputSchema: z.ZodSchema<any>
   ): Promise<string> {
     const tempDir = os.tmpdir();
     const tempFile = path.join(tempDir, `batch-${Date.now()}.jsonl`);
 
     const jsonlContent = requests
-      .map((request) =>
-        JSON.stringify({
+      .map((request) => {
+        const messages = [];
+        if (request.systemPrompt) {
+          messages.push({ role: "system", content: request.systemPrompt });
+        }
+        messages.push({ role: "user", content: request.input });
+        return JSON.stringify({
           custom_id: request.customId,
           method: "POST",
           url: "/v1/chat/completions",
           body: {
             model: this.modelId,
-            messages: [
-              ...(request.systemPrompt
-                ? [
-                    {
-                      role: "system",
-                      content: request.systemPrompt,
-                    },
-                  ]
-                : []),
-              {
-                role: "user",
-                content: request.input,
-              },
-            ],
-            response_format: zodResponseFormat(outputSchema, "moderation"),
+            messages,
+            response_format: zodResponseFormat(
+              outputSchema,
+              "structured_output"
+            ),
           },
-        })
-      )
+        });
+      })
       .join("\n");
 
     await fs.promises.writeFile(tempFile, jsonlContent);
@@ -69,7 +62,7 @@ export class OpenAILanguageModel extends LanguageModel<
   }
 
   async createBatch(
-    requests: BatchRequest<Array<ChatCompletionContentPart>>[],
+    requests: BatchRequest<Array<ContentPart>>[],
     outputSchema: z.ZodSchema<unknown>
   ): Promise<string> {
     try {
@@ -77,8 +70,9 @@ export class OpenAILanguageModel extends LanguageModel<
       const jsonlFile = await this.createJsonlFile(requests, outputSchema);
 
       // Upload file
+      const fileStream = fs.createReadStream(jsonlFile);
       const file = await this.client.files.create({
-        file: fs.createReadStream(jsonlFile),
+        file: fileStream,
         purpose: "batch",
       });
 

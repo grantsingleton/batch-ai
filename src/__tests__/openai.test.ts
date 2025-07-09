@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { OpenAILanguageModel } from "../providers/openai";
-import { BatchError, BatchRequest } from "../types";
-import { ChatCompletionContentPart } from "openai/resources/index";
+import { BatchError, BatchRequest, ContentPart } from "../types";
 
 // Mock the OpenAI client
 const mockCreate = jest.fn();
@@ -89,7 +88,7 @@ describe("OpenAILanguageModel", () => {
       response: z.string(),
     });
 
-    const testRequests: BatchRequest<ChatCompletionContentPart[]>[] = [
+    const testRequests: BatchRequest<ContentPart[]>[] = [
       {
         customId: "test-1",
         input: [
@@ -150,7 +149,7 @@ describe("OpenAILanguageModel", () => {
 
     it("should include system prompt in messages when provided", async () => {
       const schema = z.object({ test: z.string() });
-      const requests: BatchRequest<ChatCompletionContentPart[]>[] = [
+      const requests: BatchRequest<ContentPart[]>[] = [
         {
           customId: "test-1",
           input: [{ type: "text", text: "Hello" }],
@@ -184,7 +183,7 @@ describe("OpenAILanguageModel", () => {
 
     it("should not include system message when systemPrompt is not provided", async () => {
       const schema = z.object({ test: z.string() });
-      const requests: BatchRequest<ChatCompletionContentPart[]>[] = [
+      const requests: BatchRequest<ContentPart[]>[] = [
         {
           customId: "test-1",
           input: [{ type: "text", text: "Hello" }],

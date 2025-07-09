@@ -86,3 +86,13 @@ export class BatchError extends Error {
     this.name = "BatchError";
   }
 }
+
+// Common content part interface for both providers
+export interface ContentPart {
+  type: "text" | "image_url";
+  text?: string;
+  image_url?: {
+    url: string;
+    detail?: "auto" | "low" | "high";
+  };
+}

@@ -87,21 +87,21 @@ const model = anthropic("claude-3-5-sonnet-20241022", {
 
 ```typescript
 import { z } from "zod";
-import { openai, createObjectBatch, getObjectBatch } from "batch-ai";
+import { openai, anthropic, createObjectBatch, getObjectBatch } from "batch-ai";
 
-// Define your output schema using Zod
-const responseSchema = z.object({
+// Define your output schema
+const SentimentSchema = z.object({
   sentiment: z.enum(["positive", "negative", "neutral"]),
-  confidence: z.number().min(0).max(1),
+  confidence: z.number(),
 });
 
-// Initialize the model
+// Initialize a model
 const model = openai("gpt-4o", {
   apiKey: process.env.OPENAI_API_KEY, // Optional if set in environment
 });
 
 // Prepare your batch requests, input can include text and images
-// refer to https://platform.openai.com/docs/api-reference/chat/create
+// Both OpenAI and Anthropic use the same input format
 const requests = [
   {
     customId: "review-1",
@@ -121,7 +121,7 @@ const requests = [
       {
         type: "image_url",
         image_url: {
-          url: "https://test-image.jpg",
+          url: "https://example.com/product-image.jpg",
         },
       },
     ],
@@ -130,33 +130,55 @@ const requests = [
   },
 ];
 
-// Create a new batch
+// Create a batch
 const { batchId } = await createObjectBatch({
   model,
   requests,
-  outputSchema: responseSchema,
+  outputSchema: SentimentSchema,
 });
 
-// Later, retrieve the batch results
+// Poll for results
 const { batch, results } = await getObjectBatch({
   model,
   batchId,
 });
 
-// Check batch status
-if (batch.status === "completed" && results) {
-  console.log("Results:", results);
-  // [
-  //   {
-  //     customId: 'review-1',
-  //     output: { sentiment: 'positive', confidence: 0.98 }
-  //   },
-  //   {
-  //     customId: 'review-2',
-  //     output: { sentiment: 'negative', confidence: 0.95 }
-  //   }
-  // ]
-}
+// Process results
+results?.forEach((result) => {
+  console.log(result.customId, result.output);
+});
+```
+
+### Using with Anthropic
+
+The same input format works with Anthropic:
+
+```typescript
+const model = anthropic("claude-3-opus-20240229", {
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
+
+// Same request format as OpenAI
+const requests = [
+  {
+    customId: "analysis-1",
+    input: [
+      { type: "text", text: "Analyze this text for sentiment" },
+      {
+        type: "image_url",
+        image_url: {
+          url: "https://example.com/image.jpg",
+        },
+      },
+    ],
+  },
+];
+
+const { batchId } = await createObjectBatch({
+  model,
+  requests,
+  outputSchema: SentimentSchema,
+});
 ```
 
 ## Supported Providers
