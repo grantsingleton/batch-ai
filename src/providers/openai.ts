@@ -12,7 +12,7 @@ import {
   LanguageModelConfig,
   BatchStatus,
   ContentPart,
-} from "../types";
+} from "../types.js";
 import { zodResponseFormat } from "openai/helpers/zod";
 import { ChatModel } from "openai/resources/chat/chat";
 

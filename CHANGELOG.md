@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-08-14
+
+### Breaking Changes
+
+- **Node.js >= 22 is now required** (driven by the `openai` v7 SDK, which uses the native fetch API)
+- **`zod` is now a peer dependency** (`^3.25.0 || ^4.0.0`) instead of a direct dependency. npm 7+ installs peers automatically; both zod 3.25+ and zod 4 schemas are supported at runtime.
+- **OpenAI structured-output schemas with purely optional fields are now rejected** by the `openai` v7 SDK at batch creation. Mark optional fields `.optional().nullable()`.
+- Default Anthropic `max_tokens` raised from `2048` to `8192` — structured outputs that previously hit the 2048 cap will now complete instead of truncating
+
+### Changed
+
+- Bumped `@anthropic-ai/sdk` from `^0.36.3` to `^0.117.1` (no changes to the public batch surface)
+- Bumped `openai` from `^4.83.0` to `^7.4.0`
+- Model ID types now accept any string in addition to the SDK's known-model unions, so brand-new model releases work without waiting for a batch-ai update
+- Documentation and examples updated to current model generations (OpenAI `gpt-5.6` family, Anthropic Claude 5 family)
+
+### Fixed
+
+- **CommonJS entry point now works.** v1.0.0's published `require("batch-ai")` entry was a renamed ESM build that referenced ESM-only sub-modules and failed to load. The package now ships a proper dual build (`dist/index.js` for ESM, `dist/cjs/index.js` for CommonJS).
+- ESM build now emits explicit `.js` extensions on relative imports, so `import("batch-ai")` resolves correctly in native Node ESM without a bundler
+
 ## [1.0.0] - 2025-01-08
 
 ### Added
