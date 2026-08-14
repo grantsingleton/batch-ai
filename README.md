@@ -13,8 +13,8 @@ Inspired by the [Vercel AI SDK](https://sdk.vercel.ai/docs), this library aims t
 - 🚀 **Unified Interface**: Single API for multiple AI providers
 - 🔒 **Type Safety**: Full TypeScript support with Zod schema validation
 - 📦 **Provider Support**:
-  - OpenAI (gpt-4o, etc)
-  - Anthropic (Claude 3.5 Sonnet, etc)
+  - OpenAI (`gpt-5.6`, `gpt-5.6-terra`, `gpt-5.6-luna`, `gpt-4.1`, etc.)
+  - Anthropic (`claude-opus-5`, `claude-sonnet-5`, `claude-haiku-4-5`, etc.)
   - Coming Soon:
     - Google (Gemini)
     - xAI (Grok)
@@ -56,6 +56,11 @@ yarn add batch-ai
 pnpm add batch-ai
 ```
 
+### Requirements
+
+- **Node.js >= 22**
+- **zod 3.25+ or zod 4** (peer dependency — npm 7+ installs it automatically alongside batch-ai)
+
 ## Quick Start
 
 ### API Key Configuration
@@ -73,12 +78,12 @@ ANTHROPIC_API_KEY=sk-...
 2. Explicit Configuration:
 
 ```typescript
-const model = openai("gpt-4o", {
+const model = openai("gpt-5.6", {
   apiKey: "sk-...", // Your OpenAI API key
 });
 
 // or
-const model = anthropic("claude-3-5-sonnet-20241022", {
+const model = anthropic("claude-sonnet-5", {
   apiKey: "sk-...", // Your Anthropic API key
 });
 ```
@@ -96,7 +101,7 @@ const SentimentSchema = z.object({
 });
 
 // Initialize a model
-const model = openai("gpt-4o", {
+const model = openai("gpt-5.6", {
   apiKey: process.env.OPENAI_API_KEY, // Optional if set in environment
 });
 
@@ -154,7 +159,7 @@ results?.forEach((result) => {
 The same input format works with Anthropic:
 
 ```typescript
-const model = anthropic("claude-3-opus-20240229", {
+const model = anthropic("claude-opus-5", {
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
@@ -188,17 +193,19 @@ const { batchId } = await createObjectBatch({
 ```typescript
 import { openai } from "batch-ai";
 
-const model = openai("gpt-4o", {
+const model = openai("gpt-5.6", {
   apiKey: process.env.OPENAI_API_KEY,
 });
 ```
+
+> **Note on schemas:** OpenAI structured outputs don't support purely optional fields. If your output schema has optional fields, mark them `.optional().nullable()` — a schema with `.optional()` alone will be rejected at batch creation.
 
 ### Anthropic
 
 ```typescript
 import { anthropic } from "batch-ai";
 
-const model = anthropic("claude-3-5-sonnet-20241022", {
+const model = anthropic("claude-sonnet-5", {
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 ```
@@ -320,7 +327,3 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-```
-
-```

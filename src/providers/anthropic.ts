@@ -11,8 +11,23 @@ import {
   LanguageModelConfig,
   BatchStatus,
   ContentPart,
-} from "../types";
+} from "../types.js";
 import { zodToJsonSchema } from "zod-to-json-schema";
+
+// zod 4 schemas carry a `_zod` internal marker and zod 4 ships a native
+// JSON-schema converter; zod 3 schemas go through zod-to-json-schema.
+function toJsonSchema(schema: z.ZodSchema<any>): Record<string, unknown> {
+  const zodNamespace = z as unknown as {
+    toJSONSchema?: (schema: unknown) => Record<string, unknown>;
+  };
+  if (
+    typeof zodNamespace.toJSONSchema === "function" &&
+    "_zod" in (schema as object)
+  ) {
+    return zodNamespace.toJSONSchema(schema);
+  }
+  return zodToJsonSchema(schema as any) as Record<string, unknown>;
+}
 
 export class AnthropicLanguageModel extends LanguageModel<Array<ContentPart>> {
   public readonly provider = "anthropic" as const;
@@ -53,14 +68,14 @@ export class AnthropicLanguageModel extends LanguageModel<Array<ContentPart>> {
   ): Promise<string> {
     try {
       // Convert Zod schema to a JSON schema that matches Anthropic's types
-      const jsonSchema = zodToJsonSchema(outputSchema);
+      const jsonSchema = toJsonSchema(outputSchema);
 
       const batch = await this.client.messages.batches.create({
         requests: requests.map((request) => ({
           custom_id: request.customId,
           params: {
             model: this.modelId,
-            max_tokens: 2048,
+            max_tokens: 8192,
             messages: [
               {
                 role: "user",

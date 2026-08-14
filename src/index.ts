@@ -6,9 +6,9 @@ import {
   Batch,
   BatchError,
   ContentPart,
-} from "./types";
-import { OpenAILanguageModel } from "./providers/openai";
-import { AnthropicLanguageModel } from "./providers/anthropic";
+} from "./types.js";
+import { OpenAILanguageModel } from "./providers/openai.js";
+import { AnthropicLanguageModel } from "./providers/anthropic.js";
 import { ChatModel as OpenAIModel } from "openai/resources/chat/chat";
 import { Model as AnthropicModel } from "@anthropic-ai/sdk/resources/messages/messages";
 
@@ -25,26 +25,26 @@ export {
 
 /**
  * Creates an OpenAI language model instance
- * @param modelId The OpenAI model ID (e.g. 'gpt-4', 'gpt-3.5-turbo')
+ * @param modelId The OpenAI model ID (e.g. 'gpt-5.6', 'gpt-5.6-terra', 'gpt-4.1')
  * @param config Configuration options including API key
  */
 export function openai(
-  modelId: OpenAIModel,
+  modelId: OpenAIModel | (string & {}),
   config?: LanguageModelConfig
 ): LanguageModel<Array<ContentPart>> {
-  return new OpenAILanguageModel(modelId, config);
+  return new OpenAILanguageModel(modelId as OpenAIModel, config);
 }
 
 /**
  * Creates an Anthropic language model instance
- * @param modelId The Anthropic model ID (e.g. 'claude-3-opus-20240229')
+ * @param modelId The Anthropic model ID (e.g. 'claude-sonnet-5', 'claude-opus-5', 'claude-haiku-4-5')
  * @param config Configuration options including API key
  */
 export function anthropic(
-  modelId: AnthropicModel,
+  modelId: AnthropicModel | (string & {}),
   config?: LanguageModelConfig
 ): LanguageModel<Array<ContentPart>> {
-  return new AnthropicLanguageModel(modelId, config);
+  return new AnthropicLanguageModel(modelId as AnthropicModel, config);
 }
 
 export interface CreateObjectBatchParams<Input> {
