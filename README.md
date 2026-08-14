@@ -15,8 +15,8 @@ Inspired by the [Vercel AI SDK](https://sdk.vercel.ai/docs), this library aims t
 - 📦 **Provider Support**:
   - OpenAI (`gpt-5.6`, `gpt-5.6-terra`, `gpt-5.6-luna`, `gpt-4.1`, etc.)
   - Anthropic (`claude-opus-5`, `claude-sonnet-5`, `claude-haiku-4-5`, etc.)
+  - Google (`gemini-3.6-pro`, `gemini-3.6-flash`, etc.) — text inputs only for now
   - Coming Soon:
-    - Google (Gemini)
     - xAI (Grok)
     - _Want another provider? [Open an issue](https://github.com/grantsingleton/batch-ai/issues/new)!_
 - 🛠️ **Batch Operations**:
@@ -73,6 +73,7 @@ You can configure your API keys in one of two ways:
 # .env
 OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-...
+GEMINI_API_KEY=...
 ```
 
 2. Explicit Configuration:
@@ -209,6 +210,18 @@ const model = anthropic("claude-sonnet-5", {
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 ```
+
+### Google (Gemini)
+
+```typescript
+import { google } from "batch-ai";
+
+const model = google("gemini-3.6-flash", {
+  apiKey: process.env.GEMINI_API_KEY,
+});
+```
+
+> **Note:** The Gemini provider currently supports **text inputs only**. The Gemini API doesn't fetch arbitrary image URLs, so `image_url` content parts throw an error at batch creation. Open an issue if you need image support (inline base64 is feasible).
 
 ## API Reference
 
