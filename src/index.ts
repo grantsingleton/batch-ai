@@ -9,6 +9,7 @@ import {
 } from "./types.js";
 import { OpenAILanguageModel } from "./providers/openai.js";
 import { AnthropicLanguageModel } from "./providers/anthropic.js";
+import { GeminiLanguageModel } from "./providers/gemini.js";
 import { ChatModel as OpenAIModel } from "openai/resources/chat/chat";
 import { Model as AnthropicModel } from "@anthropic-ai/sdk/resources/messages/messages";
 
@@ -45,6 +46,18 @@ export function anthropic(
   config?: LanguageModelConfig
 ): LanguageModel<Array<ContentPart>> {
   return new AnthropicLanguageModel(modelId as AnthropicModel, config);
+}
+
+/**
+ * Creates a Google Gemini language model instance
+ * @param modelId The Gemini model ID (e.g. 'gemini-3.6-pro', 'gemini-3.6-flash')
+ * @param config Configuration options including API key
+ */
+export function google(
+  modelId: string,
+  config?: LanguageModelConfig
+): LanguageModel<Array<ContentPart>> {
+  return new GeminiLanguageModel(modelId, config);
 }
 
 export interface CreateObjectBatchParams<Input> {

@@ -58,11 +58,11 @@ export interface LanguageModelConfig {
 
 export abstract class LanguageModel<Input> {
   constructor(
-    public readonly modelId: OpenAIModel | AnthropicModel,
+    public readonly modelId: OpenAIModel | AnthropicModel | (string & {}),
     public readonly config?: LanguageModelConfig
   ) {}
 
-  abstract readonly provider: "openai" | "anthropic";
+  abstract readonly provider: "openai" | "anthropic" | "google";
 
   // Core methods that each provider must implement
   abstract createBatch(
