@@ -62,7 +62,7 @@ export abstract class LanguageModel<Input> {
     public readonly config?: LanguageModelConfig
   ) {}
 
-  abstract readonly provider: "openai" | "anthropic" | "google";
+  abstract readonly provider: "openai" | "anthropic" | "google" | "otium";
 
   // Core methods that each provider must implement
   abstract createBatch(

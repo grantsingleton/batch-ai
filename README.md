@@ -16,6 +16,7 @@ Inspired by the [Vercel AI SDK](https://sdk.vercel.ai/docs), this library aims t
   - OpenAI (`gpt-5.6`, `gpt-5.6-terra`, `gpt-5.6-luna`, `gpt-4.1`, etc.)
   - Anthropic (`claude-opus-5`, `claude-sonnet-5`, `claude-haiku-4-5`, etc.)
   - Google (`gemini-3.6-pro`, `gemini-3.6-flash`, etc.) — text inputs only for now
+  - Otium (`otium-small`, `otium-medium`) — batch-only inference with a 24h or 7d window
   - Coming Soon:
     - xAI (Grok)
     - _Want another provider? [Open an issue](https://github.com/grantsingleton/batch-ai/issues/new)!_
@@ -74,6 +75,7 @@ You can configure your API keys in one of two ways:
 OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-...
 GEMINI_API_KEY=...
+OTIUM_API_KEY=sk-otium-...
 ```
 
 2. Explicit Configuration:
@@ -223,6 +225,21 @@ const model = google("gemini-3.6-flash", {
 
 > **Note:** The Gemini provider currently supports **text inputs only**. The Gemini API doesn't fetch arbitrary image URLs, so `image_url` content parts throw an error at batch creation. Open an issue if you need image support (inline base64 is feasible).
 
+### Otium
+
+[Otium](https://getotium.ai) runs batch work only, on spare GPU capacity, through the same Files and Batch API as OpenAI. A longer completion window costs less: `"24h"` (the default) or `"7d"`.
+
+```typescript
+import { otium } from "batch-ai";
+
+const model = otium("otium-small", {
+  apiKey: process.env.OTIUM_API_KEY,
+  completionWindow: "7d", // optional, defaults to "24h"
+});
+```
+
+> **Note:** Otium's models take text input. A request that fails is written to the batch's error file rather than its output file, as with OpenAI, so it is missing from `getBatchResults`.
+
 ## API Reference
 
 ### Factory Functions
@@ -240,6 +257,17 @@ interface LanguageModelConfig {
 #### `anthropic(modelId: AnthropicModel, config?: LanguageModelConfig)`
 
 Creates an Anthropic language model instance.
+
+#### `otium(modelId: string, config?: OtiumConfig)`
+
+Creates an Otium language model instance.
+
+```typescript
+interface OtiumConfig extends LanguageModelConfig {
+  completionWindow?: "24h" | "7d"; // defaults to "24h"
+  baseURL?: string; // defaults to "https://api.getotium.ai/v1"
+}
+```
 
 ### Batch Operations
 

@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Otium provider** via the new `otium()` factory function, for [Otium](https://getotium.ai)'s batch-only inference API
+  - Otium implements OpenAI's Files and Batch APIs, so the provider shares the OpenAI provider's batch flow (now `OpenAICompatibleLanguageModel`) with a different base URL and `OTIUM_API_KEY`
+  - `completionWindow` option: `"24h"` (default) or `"7d"`, which costs less
+
+### Fixed
+
+- A batch in OpenAI's `finalizing` status (every request done, output file being written) is reported as `in_progress`. It was reported as `failed`, so a poller could give up on a batch that was about to complete.
+
 ## [2.1.0] - 2026-08-14
 
 ### Added

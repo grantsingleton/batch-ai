@@ -10,6 +10,11 @@ import {
 import { OpenAILanguageModel } from "./providers/openai.js";
 import { AnthropicLanguageModel } from "./providers/anthropic.js";
 import { GeminiLanguageModel } from "./providers/gemini.js";
+import {
+  OtiumLanguageModel,
+  OtiumConfig,
+  OtiumCompletionWindow,
+} from "./providers/otium.js";
 import { ChatModel as OpenAIModel } from "openai/resources/chat/chat";
 import { Model as AnthropicModel } from "@anthropic-ai/sdk/resources/messages/messages";
 
@@ -22,6 +27,8 @@ export {
   Batch,
   BatchError,
   ContentPart,
+  OtiumConfig,
+  OtiumCompletionWindow,
 };
 
 /**
@@ -58,6 +65,18 @@ export function google(
   config?: LanguageModelConfig
 ): LanguageModel<Array<ContentPart>> {
   return new GeminiLanguageModel(modelId, config);
+}
+
+/**
+ * Creates an Otium language model instance
+ * @param modelId The Otium model ID (e.g. 'otium-small', 'otium-medium')
+ * @param config Configuration options including API key and completion window
+ */
+export function otium(
+  modelId: string,
+  config?: OtiumConfig
+): LanguageModel<Array<ContentPart>> {
+  return new OtiumLanguageModel(modelId, config);
 }
 
 export interface CreateObjectBatchParams<Input> {
